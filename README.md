@@ -1,3 +1,3 @@
-# PSModuleTemplate
+# PSManifestGenerator
 
-Template repository for PowerShell modules
+A PS module for generating manifests for PS modules
