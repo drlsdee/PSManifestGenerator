@@ -59,6 +59,10 @@ param (
     $Build
 )
 
+if (($Tags.Count -eq 1) -and ($Tags -match ',')) {
+    $Tags = ($Tags[0] -split ',').Trim(' ')
+}
+
 function Load-Modules {
     [CmdletBinding()]
     param (
