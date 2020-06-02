@@ -33,6 +33,11 @@ pipeline{
             }
         }
         stage("Build manifest for other PS module"){
+            when {
+                not {
+                    environment name: 'RepoName', value: ''
+                }
+            }
             steps{
                 echo "====++++executing Build manifest for other PS module++++===="
             }
