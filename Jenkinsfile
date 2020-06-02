@@ -4,7 +4,6 @@ pipeline{
         string defaultValue: 'mmc.local', description: 'Git repo owner\'s name', name: 'ownerName', trim: true
         string defaultValue: '', description: 'Repository name', name: 'RepoName', trim: true
         string defaultValue: 'JenkinsSvc-GitGeneral', description: 'SCM credentials ID', name: 'credsID', trim: true
-        string defaultValue: 'PSManifestGenerator', description: 'Name of the PS Module for generating manifests', name: 'PSManifestGenerator', trim: true
         string defaultValue: '', description: 'Set new GUID if needed', name: 'newGuid', trim: true
         booleanParam defaultValue: false, description: 'Increment major version', name: 'IncrementMajor'
         booleanParam defaultValue: false, description: 'Increment minor version', name: 'IncrementMinor'
@@ -18,6 +17,7 @@ pipeline{
             }
             steps{
                 echo "====++++executing Build the module PSManifestGenerator itself++++===="
+                powershell label: 'Get-ChildItem', returnStatus: true, script: "Get-ChildItem -Path ${WORKSPACE}"
             }
             post{
                 always{
@@ -32,24 +32,78 @@ pipeline{
         
             }
         }
-        stage("Build manifest for other PS module"){
+        stage("Checkout PS Module ${RepoName}"){
             when {
                 not {
                     environment name: 'RepoName', value: ''
                 }
             }
             steps{
-                echo "====++++executing Build manifest for other PS module++++===="
+                echo "====++++executing Checkout PS Module ${RepoName}++++===="
+                checkout(
+                    [
+                        $class: 'GitSCM',
+                        branches: [
+                            [
+                                name: '*/master'
+                            ]
+                        ],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [
+                            [
+                                $class: 'CleanBeforeCheckout',
+                                deleteUntrackedNestedRepositories: true
+                            ],
+                            [
+                                $class: 'CleanCheckout',
+                                deleteUntrackedNestedRepositories: true
+                            ],
+                            [
+                                $class: 'RelativeTargetDirectory',
+                                relativeTargetDir: "${RepoName}"
+                            ]
+                        ],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [
+                            [
+                                credentialsId: 'JenkinsSvc-GitGeneral',
+                                url: "${ScmUri}/${ownerName}/${RepoName}.git"
+                            ]
+                        ]
+                    ]
+                )
             }
             post{
                 always{
                     echo "====++++always++++===="
                 }
                 success{
-                    echo "====++++Build manifest for other PS module executed successfully++++===="
+                    echo "====++++Checkout PS Module ${RepoName} executed successfully++++===="
                 }
                 failure{
-                    echo "====++++Build manifest for other PS module execution failed++++===="
+                    echo "====++++Checkout PS Module ${RepoName} execution failed++++===="
+                }
+        
+            }
+        }
+        stage("Build manifest for PS module ${RepoName}"){
+            when {
+                not {
+                    environment name: 'RepoName', value: ''
+                }
+            }
+            steps{
+                echo "====++++executing Build manifest for PS module ${RepoName}++++===="
+            }
+            post{
+                always{
+                    echo "====++++always++++===="
+                }
+                success{
+                    echo "====++++Build manifest for PS module ${RepoName} executed successfully++++===="
+                }
+                failure{
+                    echo "====++++Build manifest for PS module ${RepoName} execution failed++++===="
                 }
         
             }
