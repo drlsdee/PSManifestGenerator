@@ -32,7 +32,7 @@ pipeline{
         
             }
         }
-        stage("Checkout PS Module ${RepoName}"){
+        stage("Checkout PS Module"){
             when {
                 not {
                     environment name: 'RepoName', value: ''
@@ -86,7 +86,7 @@ pipeline{
         
             }
         }
-        stage("Build manifest for PS module ${RepoName}"){
+        stage("Build manifest for PS module"){
             when {
                 not {
                     environment name: 'RepoName', value: ''
