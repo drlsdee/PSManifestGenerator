@@ -9,6 +9,9 @@ pipeline{
         booleanParam defaultValue: false, description: 'Increment minor version', name: 'incrementMinor'
         string defaultValue: "${BUILD_NUMBER}", description: 'Set build number', name: 'numberOfBuild', trim: true
     }
+    options {
+        checkoutToSubdirectory 'PSManifestGenerator'
+    }
     agent any
     stages{
         stage("Build the module PSManifestGenerator itself"){
@@ -18,7 +21,7 @@ pipeline{
             steps{
                 echo "====++++executing Build the module PSManifestGenerator itself++++===="
                 //powershell label: 'Get-ChildItem', returnStatus: true, script: "Get-ChildItem -Path ${WORKSPACE}"
-                powershell label: 'BuildManifest-Self', returnStatus: true, script: "PSManifestGenerator.run.ps1 -Path ${WORKSPACE} -Major:${incrementMajor} -Minor:${incrementMinor} -Build ${numberOfBuild}"
+                powershell label: 'BuildManifest-Self', returnStatus: true, script: "PSManifestGenerator.run.ps1 -Path ${WORKSPACE} -Minor:${incrementMinor} -Build ${numberOfBuild}"
             }
             post{
                 always{
