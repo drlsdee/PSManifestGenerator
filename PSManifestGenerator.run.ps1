@@ -110,7 +110,6 @@ function Restore-BackupManifests {
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
     Write-Verbose -Message "$theFName Given path is `"$Path`""
     [System.IO.FileInfo[]]$moduleFilesAll = Get-ChildItem -Path $Path -File
-    [System.IO.FileInfo[]]$moduleScripts = $moduleFilesAll.Where({$_.Extension -eq '.psm1'})
     [System.IO.FileInfo[]]$moduleManifests = $moduleFilesAll.Where({$_.Extension -eq '.psd1'})
     [System.IO.FileInfo[]]$moduleManifestBackups = $moduleFilesAll.Where({$_.Extension -eq '.old'})
     [System.IO.FileInfo[]]$backupsToRestore = $moduleManifestBackups.Where({$_.BaseName.TrimEnd('.psd1') -notin $moduleManifests.BaseName})
@@ -150,7 +149,7 @@ function Start-ManifestGeneration {
     Get-Module -Name PSManifestGenerator
     Write-Verbose -Message "$theFName Run module from `"$Path`"..."
     try {
-        customManifest -Path $Path -Verbose
+        New-CustomPSModuleManifest -Path $Path -Verbose
     } catch {
         Write-Warning -Message "$theFName SOMETHING WRONG! "
     } finally {
