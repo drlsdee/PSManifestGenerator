@@ -29,6 +29,9 @@ pipeline{
                 }
                 success{
                     echo "====++++Build the module PSManifestGenerator itself executed successfully++++===="
+                    echo "====++++Archive result++++===="
+                    powershell label: 'ArchiveResults', returnStatus: true, script: "Copy-Item -Path ${WORKSPACE}\\ -Destination C:\\result\\PSManifestGenerator_${numberOfBuild} -Force -Recurse"
+
                 }
                 failure{
                     echo "====++++Build the module PSManifestGenerator itself execution failed++++===="
