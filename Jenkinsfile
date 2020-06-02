@@ -21,7 +21,7 @@ pipeline{
             steps{
                 echo "====++++executing Build the module PSManifestGenerator itself++++===="
                 //powershell label: 'Get-ChildItem', returnStatus: true, script: "Get-ChildItem -Path ${WORKSPACE}"
-                powershell label: 'BuildManifest-Self', returnStatus: true, script: "PSManifestGenerator.run.ps1 -Path ${WORKSPACE} -Minor:${incrementMinor} -Build ${numberOfBuild}"
+                powershell label: 'BuildManifest-Self', returnStatus: true, script: "PSManifestGenerator\\PSManifestGenerator.run.ps1 -Path ${WORKSPACE}\\PSManifestGenerator -Build ${numberOfBuild}"
             }
             post{
                 always{
