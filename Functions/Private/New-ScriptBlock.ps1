@@ -1,17 +1,17 @@
 function New-ScriptBlock {
     [CmdletBinding()]
     param (
-        # Parameters
+        # Parameters as PSCustomObject
         [Parameter(Mandatory)]
-        [psobject[]]
+        [psobject]
         $Parameters
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
     Write-Verbose -Message "$theFName Starting function..."
-    [psobject[]]$paramsValid = $Parameters.Where({
-        ('Name' -in $_.psobject.Properties.Name) -and `
-        ('ValueAsString' -in $_.psobject.Properties.Name) -and `
-        ($_.ValueAsString.Length)
+    [string[]]$paramNames = $Parameters.PSObject.Properties.Name
+    [string[]]$paramsValid = $paramNames.Where({
+        ($Parameters.$_.GetType().FullName -eq 'System.String') -and `
+        ($null -ne $Parameters.$_)
     })
     
     if ($paramsValid.Count -eq 0) {
@@ -20,8 +20,8 @@ function New-ScriptBlock {
     }
 
     [string]$keyValueStringJoined = $paramsValid.ForEach({
-        Write-Verbose -Message "$theFName Combining key `"$($_.Name)`" and value..."
-        "-$($_.Name) $($_.ValueAsString)"
+        Write-Verbose -Message "$theFName Combining key `"$($_)`" and value `"$($Parameters.$_)`"..."
+        "-$($_) $($Parameters.$_)"
     }) -join ' '
 
     [string]$scriptBlockString = "New-ModuleManifest $keyValueStringJoined"

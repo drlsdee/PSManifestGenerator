@@ -23,7 +23,7 @@ function Set-NewVersion {
         $Build
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
-    if (!$VersionOld) {
+    if (!$VersionOld.Length) {
         Write-Verbose -Message "$theFName Old version not specified. Set to zeroes: 0.0.0.0"
         [string]$versionNew = '0.0.0.0'
         return $versionNew

@@ -168,16 +168,19 @@ function Create-ManifestParameters {
         $HelpInfoUri
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
+    Write-Verbose -Message "$theFName Starting function..."
     @($PSBoundParameters.Keys).Where({$PSBoundParameters.$_}).ForEach({
         Write-Verbose -Message "$theFName Bound parameter `"$_`" found with value `"$($PSBoundParameters.$_)`""
     })
     if ($Path -match '.psd1$') {
+        Write-Verbose -Message "$theFName Given path `"$Path`" is full path to module manifest."
         [string]$manifestPath = $Path
         [string]$Path = Split-Path -Path $Path -Parent
     } else {
         [string]$Path = $Path.TrimEnd('\')
         [string]$manifestName = "$(Split-Path -Path $Path -Leaf).psd1"
         [string]$manifestPath = Join-Path -Path $Path -ChildPath $manifestName
+        Write-Verbose -Message "$theFName Given path `"$Path`" is probably a path to module folder. Manifest will be created in path `"$manifestPath`"."
     }
     if (!$Guid.Length) {
         $Guid = Set-GUID
@@ -223,26 +226,34 @@ function Create-ManifestParameters {
         Write-Verbose -Message "$theFName Tags are not set"
         $Tags = @('No')
     } else {
-        Write-Verbose -Message "Found $($Tags.Count) tags:"
+        Write-Verbose -Message "$theFName Found $($Tags.Count) tags:"
         $Tags.ForEach({
-            Write-Verbose -Message "Tag: `"$_`""
+            Write-Verbose -Message "$theFName Tag: `"$_`""
         })
     }
     if (!$ProjectUri) {
-        $ProjectUri = 'https://github.com'
+        $ProjectUri = New-ProjectUri -Path $Path
     }
-    Write-Verbose -Message "Project URI: `"$ProjectUri`""
+    Write-Verbose -Message "$theFName Project URI: `"$ProjectUri`""
     if (!$ReleaseNotes) {
         $ReleaseNotes = $Description
     }
-    Write-Verbose -Message "Release notes set to description: `"$Description`""
+    Write-Verbose -Message "$theFName Release notes set to description: `"$Description`""
 
     $outObject = New-Object -TypeName PSobject
-    $commonParams = Get-CommonParameters
-    $paramsWithValues = $MyInvocation.MyCommand.Parameters.Keys.Where({$_ -notin $commonParams}).ForEach({Get-Variable -Name $_}).Where({$_.Value})
+
+    $paramsWithValues = (Get-CommonParameters -BoundParameters $PSBoundParameters).ForEach({Get-Variable -Name $_}).Where({$_.Value})
     $paramsWithValues.ForEach({
-        $outObject | Add-Member -MemberType NoteProperty -Name $_.Name -Value $_.Value
+        [string]$parameterName = $_.Name
+        [string]$parameterValue = ConvertTo-ParameterString -InputParameter $_.Value
+        if ($parameterValue.Length) {
+            Write-Verbose -Message "$theFName Adding parameter `"$parameterName`" with string value `"$parameterValue`"..."
+            $outObject | Add-Member -MemberType NoteProperty -Name $parameterName -Value $parameterValue
+        } else {
+            Write-Warning -Message "$theFName Parameter `"$parameterName`" is empty!"
+        }
     })
     $outObject.Path = $manifestPath
+    Write-Verbose -Message "$theFName End of function."
     return $outObject
 }

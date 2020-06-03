@@ -3,12 +3,12 @@ function New-CustomPSModuleManifest {
     [Alias('customManifest')]
     param (
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]
-        # Path to local repo
+        # Path to local repository
         [string]
         $Path,
 
         [Parameter(ValueFromPipelineByPropertyName)]
-        # GUID
+        # The GUID of your module. If not set, will be generated.
         [string]
         $Guid,
 
@@ -38,52 +38,52 @@ function New-CustomPSModuleManifest {
         $RequiredModules,
 
         [Parameter(ValueFromPipelineByPropertyName)]
-        #
+        # Tags
         [string]
         $Tags,
         
         [Parameter(ValueFromPipelineByPropertyName)]
-        #
+        # URI of your project
         [string]
         $ProjectUri,
         
         [Parameter(ValueFromPipelineByPropertyName)]
-        #
+        # License URI
         [string]
         $LicenseUri,
         
         [Parameter(ValueFromPipelineByPropertyName)]
-        #
+        # Icon URI
         [string]
         $IconUri,
         
         [Parameter(ValueFromPipelineByPropertyName)]
-        #
+        # Release notes. If not set, will be equal to description.
         [string]
         $ReleaseNotes,
         
         [Parameter(ValueFromPipelineByPropertyName)]
-        #
+        # Help URI.
         [string]
         $HelpInfoUri,
 
         [Parameter(ValueFromPipelineByPropertyName)]
-        # Old version
+        # Old version. Not necessary.
         [string]
         $VersionOld,
 
         [Parameter(ValueFromPipelineByPropertyName)]
-        # Major
+        # Increment major version
         [switch]
         $Major,
 
         [Parameter(ValueFromPipelineByPropertyName)]
-        # Minor
+        # Increment minor version
         [switch]
         $Minor,
 
         [Parameter(ValueFromPipelineByPropertyName)]
-        # Build
+        # Build number
         [string]
         $Build
     )
@@ -94,140 +94,83 @@ function New-CustomPSModuleManifest {
     [string]$myModuleFilePath = "$Path\$myModuleName.psm1"
     [string]$myModuleManifestPath = "$Path\$myModuleName.psd1"
     
-    Write-Verbose -Message "$theFName Checking if module file exists..."
+    Write-Verbose -Message "$theFName Checking if module script exists..."
     if (-not (Test-Path -Path $myModuleFilePath -PathType Leaf)) {
         Write-Error -Category ObjectNotFound -Message "$theFName Module file `"$myModuleFilePath`" NOT FOUND! Exiting..."
-        break
+        return
     } else {
         Write-Verbose -Message "$theFName Module file `"$myModuleFilePath`" found. Continue."
     }
-
-    [string[]]$givenParameterNames = $PSBoundParameters.Keys.Where({
-        $_ -notin [string[]]@([System.Management.Automation.PSCmdlet]::CommonParameters + [System.Management.Automation.PSCmdlet]::OptionalCommonParameters)
-    })
-    $givenParamValues = New-Object -TypeName psobject
-    $PSBoundParameters.Keys.ForEach({
-        $givenParamValues | Add-Member -MemberType NoteProperty -Name $_ -Value $PSBoundParameters.$_
-    })
-    if (-not ($givenParameterNames.Count -gt 0)) {
-        Write-Warning -Message "$theFName Only common parameters found."
-        $givenParamValues | Add-Member -MemberType NoteProperty -Name 'Path' -Value $Path
-    } else {
-        Write-Verbose -Message "$theFName Found bound parameters: $($givenParameterNames -join ', ')"
-    }
-
-    $manifestDataNew = $givenParamValues | Create-ManifestParameters
-
-    Write-Verbose -Message "$theFName Checking if MANIFEST file exists..."
-    if (-not (Test-Path -Path $myModuleManifestPath -PathType Leaf)) {
-        Write-Verbose -Message "$theFName Manifest file `"$myModuleManifestPath`" not found. New manifest will be created."
-        $manifestDataNew.ModuleVersion = Set-NewVersion -Major:$Major -Minor:$Minor -Build $Build
-        if ($Tags) {
-        New-ModuleManifest    -Path              $manifestDataNew.Path `
-                              -NestedModules     $manifestDataNew.NestedModules `
-                              -Guid              $manifestDataNew.Guid `
-                              -Author            $manifestDataNew.Author `
-                              -CompanyName       $manifestDataNew.CompanyName `
-                              -Copyright         $manifestDataNew.Copyright `
-                              -RootModule        $manifestDataNew.RootModule `
-                              -ModuleVersion     $manifestDataNew.ModuleVersion `
-                              -Description       $manifestDataNew.Description `
-                              -PowerShellVersion $manifestDataNew.PowerShellVersion `
-                              -FunctionsToExport $manifestDataNew.FunctionsToExport `
-                              -AliasesToExport   $manifestDataNew.AliasesToExport `
-                              -ProjectUri        $manifestDataNew.ProjectUri `
-                              -ReleaseNotes      $manifestDataNew.ReleaseNotes `
-                              -Tags              $manifestDataNew.Tags
-        } else {
-        New-ModuleManifest    -Path              $manifestDataNew.Path `
-                              -NestedModules     $manifestDataNew.NestedModules `
-                              -Guid              $manifestDataNew.Guid `
-                              -Author            $manifestDataNew.Author `
-                              -CompanyName       $manifestDataNew.CompanyName `
-                              -Copyright         $manifestDataNew.Copyright `
-                              -RootModule        $manifestDataNew.RootModule `
-                              -ModuleVersion     $manifestDataNew.ModuleVersion `
-                              -Description       $manifestDataNew.Description `
-                              -PowerShellVersion $manifestDataNew.PowerShellVersion `
-                              -FunctionsToExport $manifestDataNew.FunctionsToExport `
-                              -AliasesToExport   $manifestDataNew.AliasesToExport `
-                              -ProjectUri        $manifestDataNew.ProjectUri `
-                              -ReleaseNotes      $manifestDataNew.ReleaseNotes
-        }
-        if (-not (Test-Path -Path $manifestDataNew.Path -PathType Leaf)) {
-            Write-Error -Category ObjectNotFound -Message "$theFName New manifest not found at path `"$($manifestDataNew.Path)`"! Something wrong..."
-        break
-        } else {
-            Write-Verbose -Message "$theFName Module manifest successfully created."
-        }
-    } else {
+    
+    Write-Verbose -Message "$theFName Checking if module manifest exists..."
+    if (Test-Path -Path $myModuleManifestPath -PathType Leaf) {
         Write-Verbose -Message "$theFName Manifest file `"$myModuleManifestPath`" found. Continue with updating the manifest."
         $manifestDataOld = Import-PowerShellDataFile -Path $myModuleManifestPath
-        $oldValueNames = $manifestDataOld.Keys
-        Write-Verbose -Message "$theFName Found $($oldValueNames.Count) old values"
+        Backup-OldManifest -Path $Path -Action Backup
+        Write-Verbose -Message "$theFName Backup of old manifest should be here: `"$($myModuleManifestPath).old`". Now we will remove current manifest!"
+        Remove-Item -Path $myModuleManifestPath -Force
+    } elseif (Test-Path -Path $myModuleManifestPath -PathType Container) {
+        Write-Error -Category ObjectNotFound "$theFName PATH `"$myModuleManifestPath`" IS A CONTAINER! EXITING."
+        return
+    } else {
+        Write-Verbose -Message "$theFName Manifest file `"$myModuleManifestPath`" not found. New manifest wil be created."
+        $manifestDataOld = [hashtable]::new()
+    }
 
-        $oldValueNames.Where({
-            ($_ -notin @('privatedata', 'companyname')) -and `
-            ($null -ne $manifestDataOld.$_) -and `
-            ($manifestDataOld.$_ -notmatch '[*]') -and `
-            ($manifestDataOld.$_ -notmatch 'unknown')
-        }).ForEach({
-            Write-Verbose -Message "$theFName Old value found: $_; value is `"$($manifestDataOld.$_)`""
-            $manifestDataNew.$_ = $manifestDataOld.$_
+    [array]$oldValueNamesAll = $manifestDataOld.Keys
+    [array]$oldValueNames = $oldValueNamesAll.Where({
+        ($_ -notin @('privatedata', 'companyname')) -and `
+        ($null -ne $manifestDataOld.$_) -and `
+        ($manifestDataOld.$_ -notmatch '[*]') -and `
+        ($manifestDataOld.$_ -notmatch 'unknown')
+    })
+    Write-Verbose -Message "$theFName Found $($oldValueNames.Count) old values."
+    if ($oldValueNames.Count) {
+        $oldValueNames.ForEach({
+            Write-Verbose -Message "$theFName Old parameter found: $_; value is `"$($manifestDataOld.$_)`""
         })
-        $versionNew = Set-NewVersion -Major:$Major -Minor:$Minor -Build $Build -VersionOld $manifestDataOld.ModuleVersion
-        Write-Verbose -Message "$theFName New version is set: `"$versionNew`""
-        $manifestDataNew.ModuleVersion = $versionNew
-        Write-Verbose -Message "$theFName Now we will remove the old manifest and will create new with given parameters!"
-        [string]$backupManifest = "$($manifestDataNew.Path).old"
-        Move-Item -Path $manifestDataNew.Path -Destination $backupManifest -Force
-        if (-not (Test-Path -Path $backupManifest -PathType Leaf)) {
-            Write-Warning -Message "$theFName Backup of old manifest should be at path `"$backupManifest`", but NOT FOUND!"
-        }
+    }
 
-        [string[]]$newPropNames = $manifestDataNew.PSObject.Properties.Name
-        $newPropNames.ForEach({
-            Write-Verbose -Message "$theFName Property name: $_; value: $($manifestDataNew.$_)"
-        })
+    [string[]]$givenParameterNames = Get-CommonParameters -BoundParameters $PSBoundParameters
+    Write-Verbose -Message "$theFName Found $($givenParameterNames.Count) bound parameters: $($givenParameterNames -join ', ')"
 
-        if ($Tags) {
-        New-ModuleManifest    -Path              $manifestDataNew.Path `
-                              -NestedModules     $manifestDataNew.NestedModules `
-                              -Guid              $manifestDataNew.Guid `
-                              -Author            $manifestDataNew.Author `
-                              -CompanyName       $manifestDataNew.CompanyName `
-                              -Copyright         $manifestDataNew.Copyright `
-                              -RootModule        $manifestDataNew.RootModule `
-                              -ModuleVersion     $manifestDataNew.ModuleVersion `
-                              -Description       $manifestDataNew.Description `
-                              -PowerShellVersion $manifestDataNew.PowerShellVersion `
-                              -FunctionsToExport $manifestDataNew.FunctionsToExport `
-                              -AliasesToExport   $manifestDataNew.AliasesToExport `
-                              -ProjectUri        $manifestDataNew.ProjectUri `
-                              -ReleaseNotes      $manifestDataNew.ReleaseNotes `
-                              -Tags              $manifestDataNew.Tags
+    $givenParamValues = New-Object -TypeName psobject
+    $givenParamValues | Add-Member -MemberType NoteProperty -Name 'Path' -Value $Path
+    
+    $versionNew = Set-NewVersion -Major:$Major -Minor:$Minor -Build $Build -VersionOld $manifestDataOld.ModuleVersion
+    Write-Verbose -Message "$theFName Manifest will be created with version: $versionNew"
+
+    $givenParamValues | Add-Member -MemberType NoteProperty -Name 'ModuleVersion' -Value $versionNew
+
+    $oldValueNames.Where({$_ -notin @('Path', 'ModuleVersion')}).ForEach({
+        Write-Verbose -Message "$theFName Adding old parameter `"$_ `" with value `"$($manifestDataOld.$_)`"..."
+        $givenParamValues | Add-Member -MemberType NoteProperty -Name $_ -Value $manifestDataOld.$_
+    })
+
+    $givenParameterNames.Where({$_ -ne 'Path'}).ForEach({
+        if ($PSBoundParameters.$_) {
+            Write-Verbose -Message "$theFName Adding NEW parameter `"$_ `" with value `"$($PSBoundParameters.$_)`"..."
+            $givenParamValues | Add-Member -MemberType NoteProperty -Name $_ -Value $PSBoundParameters.$_
         } else {
-        New-ModuleManifest    -Path              $manifestDataNew.Path `
-                              -NestedModules     $manifestDataNew.NestedModules `
-                              -Guid              $manifestDataNew.Guid `
-                              -Author            $manifestDataNew.Author `
-                              -CompanyName       $manifestDataNew.CompanyName `
-                              -Copyright         $manifestDataNew.Copyright `
-                              -RootModule        $manifestDataNew.RootModule `
-                              -ModuleVersion     $manifestDataNew.ModuleVersion `
-                              -Description       $manifestDataNew.Description `
-                              -PowerShellVersion $manifestDataNew.PowerShellVersion `
-                              -FunctionsToExport $manifestDataNew.FunctionsToExport `
-                              -AliasesToExport   $manifestDataNew.AliasesToExport `
-                              -ProjectUri        $manifestDataNew.ProjectUri `
-                              -ReleaseNotes      $manifestDataNew.ReleaseNotes
+            Write-Verbose -Message "$theFName Parameter $_ has no value!"
         }
-        if (-not (Test-Path -Path $manifestDataNew.Path -PathType Leaf)) {
-            Write-Error -Category ObjectNotFound -Message "$theFName New manifest not found at path `"$($manifestDataNew.Path)`"! Something wrong..."
-        break
-        } else {
-            Write-Verbose -Message "$theFName Module manifest successfully updated. Removing backup."
-            Remove-Item -Path $backupManifest -Force
-        }
+    })
+
+    $manifestDataNew = $givenParamValues | Create-ManifestParameters
+    Write-Verbose -Message "$theFName Manifest data object created."
+
+    [scriptblock]$manifestDataScriptBlock = New-ScriptBlock -Parameters $manifestDataNew
+    Write-Verbose -Message "$theFName Scriptblock created: $manifestDataScriptBlock"
+
+    Write-Verbose -Message "$theFName GENERATING MANIFEST..."
+    $manifestDataScriptBlock.Invoke()
+    
+
+    if (-not (Test-Path -Path $manifestDataNew.Path -PathType Leaf)) {
+        Write-Error -Category ObjectNotFound -Message "$theFName New manifest not found at path `"$($manifestDataNew.Path)`"! Something wrong..."
+    return
+    } else {
+        Write-Verbose -Message "$theFName Module manifest successfully updated. Removing backup."
+        Backup-OldManifest -Path $Path -Action Remove
     }
 }
