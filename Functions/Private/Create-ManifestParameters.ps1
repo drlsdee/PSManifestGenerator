@@ -2,172 +2,175 @@ function Create-ManifestParameters {
     [CmdletBinding()]
     [Alias('newManParams')]
     param (
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]
         #
         [string]
         $Path,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $NestedModules,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $Guid,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $Author,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $CompanyName,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $Copyright,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $RootModule,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $ModuleVersion,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $Description,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $ProcessorArchitecture,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $PowerShellVersion,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $ClrVersion,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $DotNetFrameworkVersion,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $PowerShellHostName,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $PowerShellHostVersion,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [hashtable[]]
         $RequiredModules,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $TypesToProcess,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $FormatsToProcess,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $ScriptsToProcess,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $RequiredAssemblies,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $FileList,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $ModuleList,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $FunctionsToExport,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $AliasesToExport,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $VariablesToExport,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $CmdletsToExport,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $DscResourcesToExport,
 
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string[]]
         $Tags,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $ProjectUri,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $LicenseUri,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $IconUri,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $ReleaseNotes,
         
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         #
         [string]
         $HelpInfoUri
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
+    @($PSBoundParameters.Keys).Where({$PSBoundParameters.$_}).ForEach({
+        Write-Verbose -Message "$theFName Bound parameter `"$_`" found with value `"$($PSBoundParameters.$_)`""
+    })
     if ($Path -match '.psd1$') {
         [string]$manifestPath = $Path
         [string]$Path = Split-Path -Path $Path -Parent
@@ -176,14 +179,14 @@ function Create-ManifestParameters {
         [string]$manifestName = "$(Split-Path -Path $Path -Leaf).psd1"
         [string]$manifestPath = Join-Path -Path $Path -ChildPath $manifestName
     }
-    if (!$Guid) {
+    if (!$Guid.Length) {
         $Guid = Set-GUID
     }
     Write-Verbose -Message "$theFName GUID is set to $Guid"
     if (!$NestedModules) {
         $NestedModules = Get-NestedModules -Path $Path
     }
-    if (!$Author) {
+    if (!$Author.Length) {
         $Author = $env:USERNAME
     }
     Write-Verbose -Message "$theFName Author is $Author"

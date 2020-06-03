@@ -53,7 +53,6 @@ param (
     [switch]
     $Minor,
 
-    
     # Set build number
     [string]
     $Build
@@ -131,14 +130,89 @@ function Restore-BackupManifests {
 function Start-ManifestGeneration {
     [CmdletBinding()]
     param (
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName)]
         # Path to target module
         [string]
-        $Path
+        $Path = $PSScriptRoot,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        # GUID
+        [string]
+        $Guid,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        # Author's name
+        [string]
+        $Author,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        # Company name (not necessary)
+        [string]
+        $CompanyName,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        # Module version (may be set auto)
+        [string]
+        $ModuleVersion,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        # PS version (may be set from build host)
+        [string]
+        $PowerShellVersion,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        # Not implemented yet
+        [hashtable]
+        $RequiredModules,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        #
+        [string[]]
+        $Tags,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        #
+        [string]
+        $ProjectUri,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        #
+        [string]
+        $LicenseUri,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        #
+        [string]
+        $IconUri,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        #
+        [string]
+        $ReleaseNotes,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        #
+        [string]
+        $HelpInfoUri,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        # Increment major version
+        [switch]
+        $Major,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        # Increment minor version
+        [switch]
+        $Minor,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        # Set build number
+        [string]
+        $Build
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
     if (-not $Path) {
-      #  $Path = $PSScriptRoot
+        $Path = $PSScriptRoot
         Write-Verbose -Message "$theFName Path is empty. Set to `"$Path`""
     } else {
         Write-Verbose -Message "$theFName Given path is `"$Path`""
@@ -149,7 +223,39 @@ function Start-ManifestGeneration {
     Get-Module -Name PSManifestGenerator
     Write-Verbose -Message "$theFName Run module from `"$Path`"..."
     try {
-        New-CustomPSModuleManifest -Path $Path -Verbose
+        <# New-CustomPSModuleManifest  -Path $Path `
+                                    -Guid $Guid `
+                                    -Author $Author `
+                                    -CompanyName $CompanyName `
+                                    -ModuleVersion $ModuleVersion `
+                                    -PowerShellVersion $PowerShellVersion `
+                                    -RequiredModules $RequiredModules `
+                                    -Tags $Tags `
+                                    -ProjectUri $ProjectUri `
+                                    -LicenseUri $LicenseUri `
+                                    -IconUri $IconUri `
+                                    -ReleaseNotes $ReleaseNotes  `
+                                    -HelpInfoUri $HelpInfoUri `
+                                    -Major:$Major `
+                                    -Minor:$Minor `
+                                    -Build $Build `
+                                    -Verbose:$Verbose #>
+        #
+        [string[]]$givenParamNames = $PSBoundParameters.Keys.Where({
+            $_ -notin [string[]]@([System.Management.Automation.PSCmdlet]::CommonParameters + [System.Management.Automation.PSCmdlet]::OptionalCommonParameters)
+        })
+        $givenParamValues = New-Object -TypeName psobject
+        if ($givenParamNames.Count) {
+            $PSBoundParameters.Keys.ForEach({
+                Write-Verbose -Message "$theFName Bound parameter `"$_`" found with value `"$($PSBoundParameters.$_)`"."
+                $givenParamValues | Add-Member -MemberType NoteProperty -Name $_ -Value $PSBoundParameters.$_
+            })
+            Write-Verbose -Message "$theFName Start command `"New-CustomPSModuleManifest`" with parameters: $($givenParamNames -join ',')"
+            $givenParamValues | New-CustomPSModuleManifest -Verbose:$Verbose
+        } else {
+            Write-Warning -Message "$theFName Parameters are not set! Try to use default values..."
+            New-CustomPSModuleManifest -Path $Path -Verbose
+        }
     } catch {
         Write-Warning -Message "$theFName SOMETHING WRONG! "
     } finally {
@@ -158,5 +264,16 @@ function Start-ManifestGeneration {
         Restore-BackupManifests -Path $Path
     }
 }
-
-Start-ManifestGeneration -Path $Path
+if ($PSBoundParameters.Keys.Count) {
+    $scriptParameters = New-Object -TypeName psobject
+    $PSBoundParameters.Keys.Where({
+        $_ -notin [string[]]@([System.Management.Automation.PSCmdlet]::CommonParameters + [System.Management.Automation.PSCmdlet]::OptionalCommonParameters)
+    }).ForEach({
+        Write-Verbose "[$($MyInvocation.MyCommand.Name)]: Bound parameter `"$_`" found with value `"$($PSBoundParameters.$_)`"."
+        $scriptParameters | Add-Member -MemberType NoteProperty -Name $_ -Value $PSBoundParameters.$_
+    })
+    $scriptParameters | Start-ManifestGeneration -Verbose:$Verbose
+} else {
+    Write-Warning -Message "[$($MyInvocation.MyCommand.Name)]: Parameters are not set! Try to use default values..."
+    Start-ManifestGeneration -Verbose
+}
