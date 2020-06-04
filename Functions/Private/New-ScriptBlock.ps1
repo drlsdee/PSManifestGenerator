@@ -21,7 +21,7 @@ function New-ScriptBlock {
 
     [string]$keyValueStringJoined = $paramsValid.ForEach({
         Write-Verbose -Message "$theFName Combining key `"$($_)`" and value `"$($Parameters.$_)`"..."
-        "-$($_) $($Parameters.$_)"
+        "-$($_) `"$($Parameters.$_)`""
     }) -join ' '
 
     [string]$scriptBlockString = "New-ModuleManifest $keyValueStringJoined"

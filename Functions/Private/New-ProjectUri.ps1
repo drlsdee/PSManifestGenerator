@@ -77,8 +77,6 @@ function New-ProjectUri {
     [string]$SCMHostName = [regex]::Match($SCMUri, '\w+(\.\w+)+').Value
     Write-Verbose -Message "$theFName SCM host name: `"$SCMHostName`""
 
-    # Build path to repo (relative from SCM hostname)
-    #[string]$localPath = "$Owner/$repoName"
     Write-Verbose -Message "$theFName Relative path to repository on SCM:`"$localPath`""
 
     $outURI.Host = $SCMHostName
@@ -93,8 +91,3 @@ function New-ProjectUri {
     Write-Verbose -Message "$theFName End of function."
     return $outURIString
 }
-<# 
-New-ProjectUri -Path 'C:\Users\Administrator\Gitea\PSManifestGenerator\.git' -Verbose -SCMUri 'gitea00.mmc.local' -Port 3000 -Owner 'mmc.local' -Protocol HTTP
-New-ProjectUri -Path 'C:\Users\Administrator\Gitea\PSManifestGenerator\.git' -Verbose -Port 443 -Owner 'drlsdee'
-New-ProjectUri -Path 'C:\Users\Administrator\Gitea\wixscript\.git' -Verbose -SCMUri 'https://github.com/drlsdee/wixscript/'
- #>
