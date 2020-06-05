@@ -68,7 +68,7 @@ $toolFunctionScripts.ForEach({
     . $_
 })
 
-Import-AllModules -Path $Path -Verbose -Action Load
+Import-AllModules -Path $Path -Action Load -Verbose
 $parameterObject = [psobject]::new()
 $PSBoundParameters.Keys.ForEach({
     if ($PSBoundParameters.$_) {
@@ -81,5 +81,7 @@ if ($parameterObject.Path) {
     $parameterObject | Add-Member -MemberType NoteProperty -Name 'Path' -Value $Path
 }
 
-$parameterObject | New-CustomPSModuleManifest -Verbose
-Import-AllModules -Path $Path -Verbose -Action Unload
+#$parameterObject | New-CustomPSModuleManifest -Verbose
+New-ModuleManifestAuto -Verbose -Tags test,123 #-Author 'Dr. L. S. Dee'
+#Get-Module -Name PSManifestGenerator | fl
+Import-AllModules -Path $Path -Action Unload -Verbose
