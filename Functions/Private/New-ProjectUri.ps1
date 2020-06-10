@@ -10,7 +10,7 @@ function New-ProjectUri {
         # This parameter may include or not: protocol (HTTP or HTTPS) and port (if non-standard, e.g. 8080 or 8443, or 3000 for Gitea)
         [Parameter()]
         [uri]
-        $SCMUri = 'github.com',
+        $SCMUri,
 
         # The repository owner's name. The parameter will be included in resulting project URI.
         [Parameter()]

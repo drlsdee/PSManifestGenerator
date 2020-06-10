@@ -30,6 +30,17 @@ function New-ModuleManifestAuto {
         [string]
         $CompanyName,
 
+        # URI of your source code management system, e.g. GitHub or local SCM. Default is GitHub.com.
+        # This parameter may include or not: protocol (HTTP or HTTPS) and port (if non-standard, e.g. 8080 or 8443, or 3000 for Gitea)
+        [Parameter()]
+        [uri]
+        $SCMUri = 'github.com',
+
+        # The repository owner's name. The parameter will be included in resulting project URI.
+        [Parameter()]
+        [string]
+        $Owner,
+
         # Specifies the version of the module.
         # This parameter is not required by the cmdlet, but a ModuleVersion key is required in the manifest. If you omit this parameter, the script creates a ModuleVersion key with a value of "1.0".
         [Parameter(ValueFromPipelineByPropertyName)]
@@ -310,12 +321,75 @@ function New-ModuleManifestAuto {
     }
 
     if      ($Tags) {
-        Write-Verbose -Message "$theFName Tags defined in bound parameters."
+        Write-Verbose -Message "$theFName Tags are defined in bound parameters."
         $manifestData.Tags = $Tags
     }
     elseif  ($manifestData.Tags) {
         Write-Verbose -Message "$theFName Tags are not defined in bound parameters but found in old data"
     }
+    else {
+        Write-Verbose -Message "$theFName Tags are not defined nor in bound parameters neither in old data"
+    }
+
+    if      ($ModuleVersion) {
+        Write-Verbose -Message "$theFName Module version is defined in bound parameters: `"$ModuleVersion`"."
+        $manifestData.ModuleVersion = $ModuleVersion
+    }
+    elseif  ($manifestData.ModuleVersion) {
+        Write-Verbose -Message "$theFName Module version is not defined in bound parameters but found in old data: `"$($manifestData.ModuleVersion)`". Processing..."
+        $ModuleVersion = Set-NewVersion -VersionOld $manifestData.ModuleVersion
+        $manifestData.ModuleVersion = $ModuleVersion
+    }
+    else    {
+        Write-Verbose -Message "$theFName Module version is not defined in bound parameters nor in old data. Generating new version..."
+        $ModuleVersion = Set-NewVersion
+    }
+    Write-Verbose -Message "$theFName Module version is set to: `"$ModuleVersion`"."
+
+    if      ($ProjectUri) {
+        Write-Verbose -Message "$theFName Project URI is defined in bound parameters: `"$ProjectUri`"."
+        $manifestData.ProjectUri = $ProjectUri
+    }
+    elseif ($manifestData.ProjectUri) {
+        $ProjectUri = $manifestData.ProjectUri
+        Write-Verbose -Message "$theFName Project URI is not defined in bound parameters but found in old data: `"$ProjectUri`"."
+    }
+    else {
+        Write-Verbose -Message "$theFName Project URI is not defined nor in bound parameters neither in old data."
+        $ProjectUri = New-ProjectUri -Path $Path -SCMUri $SCMUri -Owner $Owner
+        $manifestData.ProjectUri = $ProjectUri
+    }
+    Write-Verbose -Message "$theFName Project URI is set to: `"$ProjectUri`"."
+
+    if      (
+        $PreRelease -or `
+        $manifestData.PreRelease
+    ) {
+        Write-Verbose -Message "$theFName The key `"PreRelease`" is set. Checking version of the PowerShellGet..."
+        [version]$powerShellGetVersionTarget = '1.6.6'
+        [version]$powerShellGetVersionCurrent = (Get-PackageProvider -Name 'PowerShellGet').Version
+        
+        if ($powerShellGetVersionCurrent -ge $powerShellGetVersionTarget) {
+            Write-Verbose -Message "$theFName Current version of the PowerShellGet is `"$powerShellGetVersionCurrent`" and is greater or equal to required version `"1.6.6`" Filling the key `"PreRelease`" with given value..."
+            $manifestData.PreRelease = $PreRelease
+        }
+        else {
+            Write-Warning -Message "$theFName Current version of the PowerShellGet is `"$powerShellGetVersionCurrent`" and is LESS required version `"1.6.6`" Ignoring the key `"PreRelease`"."
+            $manifestData.Remove('PreRelease')
+        }
+    }
+
+    Write-Verbose -Message "$theFName Passing common parameters to `"New-ModuleManifest`"..."
+    [string[]]$parameterNamesCommon = @(
+        [System.Management.Automation.PSCmdlet]::CommonParameters
+        [System.Management.Automation.PSCmdlet]::OptionalCommonParameters
+    )
+    $parameterNamesCommon.ForEach({
+        Write-Verbose -Message "$theFName Processing common parameter: $_"
+        if ($PSBoundParameters.ContainsKey($_)) {
+            $manifestData.$_ = $PSBoundParameters.$_
+        }
+    })
 
     $manifestData
 
