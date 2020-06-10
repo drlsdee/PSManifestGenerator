@@ -15,6 +15,12 @@ function Set-PreReleaseNotes {
     Write-Verbose -Message "$theFName Starting function..."
     [string]$powerShellGetName = 'PowerShellGet'
     [version]$powerShellGetVersionRequired  = '1.6.6'
+
+    if (-not $PreRelease) {
+        Write-Verbose -Message "$theFName Parameter `"PreRelease is not used`". Ignoring."
+        return $null
+    }
+
     try     {
         [version]$powerShellGetVersionCurrent   = (Get-PackageProvider -Name $powerShellGetName -ErrorAction Stop).Version
     }

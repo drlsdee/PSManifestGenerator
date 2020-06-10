@@ -105,7 +105,6 @@ function New-ModuleManifestAuto {
     [string]$repositoryPath = Split-Path -Path $Path -Parent
 
     [hashtable]$manifestData = [hashtable]::new()
-    $manifestData.Path = $Path
 
     if (Test-Path -Path $Path -PathType Leaf) {
         Write-Verbose -Message "$theFName An old manifest found in path: $Path and will be overwritten."
@@ -132,6 +131,7 @@ function New-ModuleManifestAuto {
     } else {
         Write-Verbose -Message "$theFName An old manifest NOT found in path: $Path. Creating new manifest..."
     }
+    $manifestData.Path = $Path
 
     Write-Verbose -Message "$theFName List public functions..."
     $manifestData.FunctionsToExport = Get-PublicFunctions -Path $repositoryPath
@@ -214,8 +214,22 @@ function New-ModuleManifestAuto {
         }
     })
 
+    Write-Verbose -Message "$theFName Now do some cleanup..."
+    [string[]]$keysEmpty = $manifestData.Keys.Where({-not $manifestData.$_})
+    $keysEmpty.ForEach({
+        Write-Verbose -Message "$theFName The key `"$_`" does not contains value! Removing..."
+        $manifestData.Remove($_)
+    })
+
+    <# $manifestData.Keys.ForEach({
+        if (-not $manifestData.$_) {
+            Write-Verbose -Message "$theFName The key `"$_`" does not contains value! Removing..."
+            $manifestData.Remove($_)
+        }
+    }) #>
+
     Write-Verbose -Message "$theFName The manifest data table is created. Now run it!"
-#    New-ModuleManifest @manifestData
+    New-ModuleManifest @manifestData
     $manifestData
 
     Write-Verbose -Message "$theFName End of function."
