@@ -6,6 +6,11 @@ function New-ProjectUri {
         [string]
         $Path,
 
+        # Project URI from bound parameters
+        [Parameter()]
+        [uri]
+        $ProjectUri,
+
         # URI of your source code management system, e.g. GitHub or local SCM. Default is GitHub.com.
         # This parameter may include or not: protocol (HTTP or HTTPS) and port (if non-standard, e.g. 8080 or 8443, or 3000 for Gitea)
         [Parameter()]
@@ -31,6 +36,11 @@ function New-ProjectUri {
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
     Write-Verbose -Message "$theFName Starting function..."
+
+    if ($ProjectUri) {
+        Write-Verbose -Message "$theFName The project URI is defined in bound parameters. Returning: $ProjectUri"
+        return $ProjectUri
+    }
 
     if (-not (Get-Command -Name 'Get-RepoName' -ErrorAction Ignore)) {
         Write-Warning -Message "$theFName Function `"Get-RepoName`" is not imported! Try to search here: `"$PSScriptRoot\Get-RepoName.ps1`"..."

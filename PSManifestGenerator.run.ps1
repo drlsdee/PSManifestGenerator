@@ -82,6 +82,6 @@ if ($parameterObject.Path) {
 }
 
 #$parameterObject | New-CustomPSModuleManifest -Verbose
-New-ModuleManifestAuto -Verbose -Tags test,123 -PreRelease 'aaa' -Author 'Dr. L. S. Dee' -SCMUri 'http://gitea00.mmc.local:3000' -Owner 'mmc.local'
+New-ModuleManifestAuto -Verbose -ProjectUri 'https://github.com/drlsdee/PSManifestGenerator' #-Tags test,123 -PreRelease 'aaa' -Author 'Dr. L. S. Dee' -SCMUri 'http://gitea00.mmc.local:3000' -Owner 'mmc.local'
 #Get-Module -Name PSManifestGenerator | fl
 Import-AllModules -Path $Path -Action Unload -Verbose

@@ -2,6 +2,11 @@ function Set-NewVersion {
     [CmdletBinding()]
     [Alias('newVer')]
     param (
+        # Module version from bound parameters
+        [Parameter()]
+        [string]
+        $ModuleVersion,
+
         [Parameter()]
         # Old version
         [string]
@@ -23,6 +28,12 @@ function Set-NewVersion {
         $Build
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
+    Write-Verbose -Message "$theFName Starting function..."
+    if ($ModuleVersion) {
+        Write-Verbose -Message "$theFName Module version set in bound parameters. Returning: $ModuleVersion"
+        return $ModuleVersion
+    }
+
     if (!$VersionOld.Length) {
         Write-Verbose -Message "$theFName Old version not specified. Set to zeroes: 0.0.0.0"
         [string]$versionNew = '0.0.0.0'
