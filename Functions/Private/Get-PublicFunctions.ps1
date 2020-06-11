@@ -19,7 +19,7 @@ function Get-PublicFunctions {
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
     Write-Verbose -Message "$theFName Given path is `"$Path`""
-    [string[]]$publicFunctions = @()
+    
     [string]$functionsPathAll = "$Path\$Functions"
     Write-Verbose -Message "$theFName Expecting functions folder at path `"$functionsPathAll`""
     [string]$functionsPathPublic = "$Path\$Functions\$Public"
