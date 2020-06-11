@@ -14,7 +14,7 @@ function Convert-ModuleManifestPath {
         $ReturnType
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
-    Write-Verbose -Message "$theFName Starting function..."
+    Write-Verbose -Message "$theFName Starting function... Current location is $((Get-Location).Path)"
 
     if      ([System.IO.Path]::GetExtension($Path))
     {

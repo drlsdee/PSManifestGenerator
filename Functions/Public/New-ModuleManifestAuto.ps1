@@ -94,12 +94,16 @@ function New-ModuleManifestAuto {
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
     Write-Verbose -Message "$theFName Starting function..."
 
-    if ($Path.Length -eq 0) {
+    if (-not $Path) {
         Write-Verbose -Message "$theFName Path is not specified! Will work on manifest of this module..."
         $Path = $PSScriptRoot
     }
-    $Path           = Convert-ModuleManifestPath -Path $Path -ReturnType File
+    Write-Verbose -Message "$theFName RESOLVING REPOSITORY PATH FROM `"$Path`"..."
     $repositoryPath = Convert-ModuleManifestPath -Path $Path -ReturnType Folder
+    Write-Verbose -Message "$theFName Repository path: $repositoryPath"
+
+    Write-Verbose -Message "$theFName RESOLVING MANIFEST PATH FROM `"$Path`"..."
+    $Path           = Convert-ModuleManifestPath -Path $Path -ReturnType File
     Write-Verbose -Message "$theFName PowerShell module manifest path: $Path"
     [string]$repositoryPath = Split-Path -Path $Path -Parent
 

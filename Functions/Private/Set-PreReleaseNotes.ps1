@@ -17,7 +17,7 @@ function Set-PreReleaseNotes {
     [version]$powerShellGetVersionRequired  = '1.6.6'
 
     if (-not $PreRelease) {
-        Write-Verbose -Message "$theFName Parameter `"PreRelease is not used`". Ignoring."
+        Write-Verbose -Message "$theFName Parameter `"PreRelease`" is not used. Ignoring."
         return $null
     }
 

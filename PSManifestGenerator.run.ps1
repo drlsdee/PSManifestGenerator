@@ -1,7 +1,7 @@
 param (
     # Path to target module
     [string]
-    $Path = $PSScriptRoot,
+    $Path,
 
     # GUID
     [string]
@@ -81,13 +81,6 @@ if ($parameterObject.Path) {
     $parameterObject | Add-Member -MemberType NoteProperty -Name 'Path' -Value $Path
 }
 
-#$parameterObject | New-CustomPSModuleManifest -Verbose
-#New-ModuleManifestAuto -Verbose -ProjectUri 'https://github.com/drlsdee/PSManifestGenerator' #-Tags test,123 -PreRelease 'aaa' -Author 'Dr. L. S. Dee' -SCMUri 'http://gitea00.mmc.local:3000' -Owner 'mmc.local'
-#Get-Module -Name PSManifestGenerator | fl
-New-ModuleManifestAuto  -Verbose `
-                        -ProjectUri 'https://github.com/drlsdee/PSModuleCleanup' `
-                        -Path 'C:\Users\Administrator\Gitea\PSManifestGenerator\' `
-                        -Author 'Dr. L. S. Dee' `
-                        -Contact 'tracert0@gmail.com'
+New-ModuleManifestAuto @PSBoundParameters
 Import-AllModules -Path $Path -Action Unload -Verbose
 

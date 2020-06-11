@@ -108,4 +108,3 @@ function Get-CommitMessage {
         return
     }
 }
-Get-CommitMessage -Verbose -Path $PSScriptRoot
