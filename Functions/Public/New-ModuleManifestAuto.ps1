@@ -96,11 +96,10 @@ function New-ModuleManifestAuto {
 
     if ($Path.Length -eq 0) {
         Write-Verbose -Message "$theFName Path is not specified! Will work on manifest of this module..."
-        [string]$repositoryPath = (Resolve-Path -Path "$PSScriptRoot\..\..").Path
-        [string]$repositoryName = Split-Path -Path $repositoryPath -Leaf
-        [string]$manifestName = "$($repositoryName).psd1"
-        $Path = "$($repositoryPath)\$($manifestName)"
+        $Path = $PSScriptRoot
     }
+    $Path           = Convert-ModuleManifestPath -Path $Path -ReturnType File
+    $repositoryPath = Convert-ModuleManifestPath -Path $Path -ReturnType Folder
     Write-Verbose -Message "$theFName PowerShell module manifest path: $Path"
     [string]$repositoryPath = Split-Path -Path $Path -Parent
 
@@ -197,7 +196,7 @@ function New-ModuleManifestAuto {
     Write-Verbose -Message "$theFName Module version is set to: `"$($manifestData.ModuleVersion)`"."
 
     Write-Verbose -Message "$theFName Set project URI..."
-    $manifestData.ProjectUri = New-ProjectUri -Path $Path -ProjectUri $ProjectUri -SCMUri $SCMUri -Owner $Owner
+    $manifestData.ProjectUri = New-ProjectUri -Path $Path -ProjectUri $ProjectUri -OriginURI $commitMessage.URI -SCMUri $SCMUri -Owner $Owner
 
     Write-Verbose -Message "$theFName Set pre-release notes..."
     $manifestData.PreRelease = Set-PreReleaseNotes -PreRelease:$PreRelease -PreReleaseNotes $commitMessage.Message
@@ -221,14 +220,8 @@ function New-ModuleManifestAuto {
         $manifestData.Remove($_)
     })
 
-    <# $manifestData.Keys.ForEach({
-        if (-not $manifestData.$_) {
-            Write-Verbose -Message "$theFName The key `"$_`" does not contains value! Removing..."
-            $manifestData.Remove($_)
-        }
-    }) #>
-
     Write-Verbose -Message "$theFName The manifest data table is created. Now run it!"
+
     New-ModuleManifest @manifestData
     $manifestData
 

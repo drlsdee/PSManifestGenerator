@@ -11,6 +11,11 @@ function New-ProjectUri {
         [uri]
         $ProjectUri,
 
+        # Project URI from Git message
+        [Parameter()]
+        [uri]
+        $OriginURI,
+
         # URI of your source code management system, e.g. GitHub or local SCM. Default is GitHub.com.
         # This parameter may include or not: protocol (HTTP or HTTPS) and port (if non-standard, e.g. 8080 or 8443, or 3000 for Gitea)
         [Parameter()]
@@ -42,11 +47,17 @@ function New-ProjectUri {
         return $ProjectUri
     }
 
-    if (-not (Get-Command -Name 'Get-RepoName' -ErrorAction Ignore)) {
-        Write-Warning -Message "$theFName Function `"Get-RepoName`" is not imported! Try to search here: `"$PSScriptRoot\Get-RepoName.ps1`"..."
-        . $PSScriptRoot\Get-RepoName.ps1
+    if ($OriginURI) {
+        Write-Verbose -Message "$theFName The project URI found in Git message: `"git -C <Path> config --get remote.origin.url`". Returning: $ProjectUri"
+        return $OriginURI
     }
-    [string]$repoName = Get-RepoName -Path $Path
+
+    if (Test-Path -Path $Path -PathType Leaf) {
+        Write-Verbose -Message "$theFName Given path is probably a path to some file."
+        $Path = [System.IO.Path]::GetDirectoryName($Path)
+    }
+
+    [string]$repoName = [System.IO.Path]::GetFileName($Path)
 
     # Get owner's name if not set
     if (-not $Owner) {

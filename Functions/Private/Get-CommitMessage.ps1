@@ -30,6 +30,9 @@ function Get-CommitMessage {
     Write-Verbose -Message "$theFName Getting commit message: git -C $Path show -s"
     [string[]]$commitMsgRaw   = git -C $Path show -s
 
+    Write-Verbose -Message "$theFName Getting commit message: git -C $Path show -s"
+    [string]$originURI = git -C $Path config --get remote.origin.url
+
     switch ($true) {
         {$null -ne $branchRaw}      {
             [string]$branchCurrent = $branchRaw.Where({$_ -match '^\*'}).TrimStart('* ')
@@ -90,6 +93,10 @@ function Get-CommitMessage {
                 $commitMsgJoined = $commitMsgBody -join ' '
                 $tmpCommitHashTable.Message = $commitMsgJoined
             }
+        }
+        {$null -ne $originURI}      {
+            Write-Verbose -Message "$theFName Origin URI found: $originURI"
+            $tmpCommitHashTable.URI = $originURI.TrimEnd('.git')
         }
     }
 
