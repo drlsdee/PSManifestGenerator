@@ -2,26 +2,25 @@ function Get-AliasesToExport {
     [CmdletBinding()]
     [Alias('newAls')]
     param (
+        # The list of all module files with valid extensions
         [Parameter()]
-        # Path to target module
-        [string]
-        $Path,
-
-        [Parameter()]
-        # List of functions
-        [string[]]
-        $Functions
+        [System.IO.FileInfo[]]
+        $PublicFunctions
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
     Write-Verbose -Message "$theFName Starting function..."
     [string[]]$aliasesToExport = @()
-    [System.IO.FileInfo[]]$scriptsAll = Get-ChildItem -Path $Path -File -Filter '*.ps1' -Recurse
-    Write-Verbose -Message "$theFName Found $($scriptsAll.Count) scripts in path `"$Path`""
-    [System.IO.FileInfo[]]$scriptsFunc = $scriptsAll.Where({$_.BaseName -in $Functions})
-    Write-Verbose -Message "$theFName Found $($scriptsFunc.Count) functions in path `"$Path`""
-    $scriptsFunc.ForEach({
-        [string]$scriptFullName = $_.FullName
-        [string]$scriptBaseName = $_.BaseName
+
+    if (-not $PublicFunctions) {
+        Write-Warning -Message "$theFName No public functions specified! Exiting."
+        return
+    }
+
+    $PublicFunctions.ForEach({
+        [System.IO.FileInfo]$functionScript = $_
+        [string]$scriptFullName = $functionScript.FullName
+        [string]$scriptBaseName = $functionScript.BaseName
+
         try {
             Get-Command -Name $scriptBaseName -ErrorAction Stop
             Write-Verbose -Message "$theFName Function `"$scriptBaseName`" found in path `"$scriptFullName`". Try to get command..."
@@ -30,6 +29,7 @@ function Get-AliasesToExport {
             Write-Verbose -Message "$theFName Function `"$scriptBaseName`" is not imported. Dot sourcing it from path `"$scriptFullName`"..."
             . $scriptFullName
         }
+
         try {
             [string]$aliasName = (Get-Alias -Definition $scriptBaseName -ErrorAction Stop).Name
             Write-Verbose -Message "$theFName Found alias `"$aliasName`" for function `"$scriptBaseName`"."
@@ -38,6 +38,7 @@ function Get-AliasesToExport {
             Write-Warning -Message "$theFName Function `"$scriptBaseName`" has no aliases!"
         }
     })
+
     Write-Verbose -Message "$theFName End of function."
     return $aliasesToExport
 }

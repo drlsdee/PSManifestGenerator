@@ -139,10 +139,11 @@ function New-ModuleManifestAuto {
     $manifestData.Path = $Path
 
     Write-Verbose -Message "$theFName List public functions..."
-    $manifestData.FunctionsToExport = Get-PublicFunctions -Path $repositoryPath -ModuleFiles $moduleFilesAll
+    [System.IO.FileInfo[]]$publicFunctions  = Get-PublicFunctions -Path $repositoryPath -ModuleFiles $moduleFilesAll
+    $manifestData.FunctionsToExport         = $publicFunctions.BaseName
     
     Write-Verbose -Message "$theFName List aliases for public functions..."
-    $manifestData.AliasesToExport = Get-AliasesToExport -Path $repositoryPath -Functions $manifestData.FunctionsToExport
+    $manifestData.AliasesToExport = Get-AliasesToExport -PublicFunctions $publicFunctions
 
     Write-Verbose -Message "$theFName Set RootModule..."
     $manifestData.RootModule = Set-RootModule -Path $repositoryPath -ManifestPath $Path -RootModule $manifestData.RootModule

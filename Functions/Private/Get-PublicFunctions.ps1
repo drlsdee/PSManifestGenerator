@@ -67,8 +67,6 @@ function Get-PublicFunctions {
         return
     }
 
-    [string[]]$functionsPublic = $functionScripts.BaseName
-
-    Write-Verbose -Message "$theFName Found $($functionsPublic.Count) scripts in path `"$pathToSearch`"."
-    return $functionsPublic
+    Write-Verbose -Message "$theFName Found $($functionScripts.Count) scripts in path `"$pathToSearch`"."
+    return $functionScripts
 }
