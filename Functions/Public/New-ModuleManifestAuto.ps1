@@ -142,8 +142,12 @@ function New-ModuleManifestAuto {
     Write-Verbose -Message "$theFName List aliases for public functions..."
     $manifestData.AliasesToExport = Get-AliasesToExport -Path $repositoryPath -Functions $manifestData.FunctionsToExport
 
+    Write-Verbose -Message "$theFName Set RootModule..."
+    $manifestData.RootModule = Set-RootModule -Path $repositoryPath -ManifestPath $Path -RootModule $manifestData.RootModule
+    Write-Verbose -Message "$theFName Root module defined: $($manifestData.RootModule)"
+
     Write-Verbose -Message "$theFName List nested modules..."
-    $manifestNestedModules = Get-NestedModules -Path $repositoryPath
+    $manifestNestedModules = Get-NestedModules -Path $repositoryPath -RootModule $manifestData.RootModule
     if ($manifestNestedModules) {
         $manifestData.NestedModules = $manifestNestedModules
     }
@@ -161,10 +165,6 @@ function New-ModuleManifestAuto {
 
     Write-Verbose -Message "$theFName Set PowerShellVersion..."
     $manifestData.PowerShellVersion = Set-PowerShellVersion -PowerShellVersion $PowerShellVersion -PowerShellVersionOld $manifestData.PowerShellVersion
-
-    Write-Verbose -Message "$theFName Set RootModule..."
-    $manifestData.RootModule = Set-RootModule -Path $repositoryPath -ManifestPath $Path -RootModule $manifestData.RootModule
-    Write-Verbose -Message "$theFName Root module defined: $($manifestData.RootModule)"
 
     if ($CompanyName) {
         Write-Verbose -Message "$theFName Set Company name: $CompanyName"

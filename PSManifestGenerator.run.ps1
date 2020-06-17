@@ -68,7 +68,7 @@ $toolFunctionScripts.ForEach({
     . $_
 })
 
-Import-AllModules -Path $Path -Action Load -Verbose
+Import-AllModules -Path $PSScriptRoot -Action Load -Verbose
 $parameterObject = [psobject]::new()
 $PSBoundParameters.Keys.ForEach({
     if ($PSBoundParameters.$_) {
@@ -82,5 +82,4 @@ if ($parameterObject.Path) {
 }
 
 New-ModuleManifestAuto @PSBoundParameters
-Import-AllModules -Path $Path -Action Unload -Verbose
-
+Import-AllModules -Path $PSScriptRoot -Action Unload -Verbose
