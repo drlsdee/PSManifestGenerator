@@ -1,4 +1,4 @@
-function Get-ModuleFiles {
+function Get-ModuleFilesInventory {
     [CmdletBinding()]
     param (
         # Path to local repository
