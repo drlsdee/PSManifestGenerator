@@ -7,6 +7,11 @@ function Get-PublicFunctions {
         [string]
         $Path,
 
+        # The list of all module files with valid extensions
+        [Parameter()]
+        [System.IO.FileInfo[]]
+        $ModuleFiles,
+
         [Parameter(DontShow)]
         # Functions root folder name
         [string]
@@ -18,49 +23,52 @@ function Get-PublicFunctions {
         $Public = 'Public'
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
-    Write-Verbose -Message "$theFName Given path is `"$Path`""
-<#     
-    [string]$functionsPathAll = "$Path\$Functions"
-    Write-Verbose -Message "$theFName Expecting functions folder at path `"$functionsPathAll`""
-    [string]$functionsPathPublic = "$Path\$Functions\$Public"
-    Write-Verbose -Message "$theFName Expecting PUBLIC functions folder at path `"$functionsPathPublic`""
-    [string]$pathToSearch = $functionsPathPublic
-    if (-not (Test-Path -Path $functionsPathPublic -PathType Container)) {
-        [string]$pathToSearch = $functionsPathAll
-        Write-Verbose -Message "$theFName Public functions folder not found in path `"$functionsPathPublic`". Try to search in `"$pathToSearch`"..."
-    } elseif (-not (Test-Path -Path $functionsPathAll -PathType Container)) {
-        [string]$pathToSearch = $Path
-        Write-Verbose -Message "$theFName Public functions folder not found in path `"$functionsPathAll`". Try to search in `"$pathToSearch`"..."
-    }
- #>
-    [string]$pathToFunctions    = [System.IO.Path]::Combine($Path, $Functions)
-    [string]$pathToSearch       = [System.IO.Path]::Combine($Path, $Functions, $Public)
-    Write-Verbose -Message "$theFName Default path to search for public functions: $pathToSearch"
-    
-    if (-not [System.IO.Directory]::Exists($pathToFunctions)) {
-        Write-Verbose -Message "$theFName It seems like the folder `"$pathToFunctions`" does not exists! All functions found in all submodules will be declared as public. Exiting."
+    Write-Verbose -Message "$theFName Starting function..."
+
+    if (-not $ModuleFiles) {
+        Write-Warning -Message "$theFName List of module files is empty! Exiting."
         return
     }
-    
-    if (-not [System.IO.Directory]::Exists($pathToSearch)) {
-        Write-Verbose -Message "$theFName It seems like the folder `"$pathToSearch`" does not exists. I'll try to search for functions in folder `"$pathToFunctions`"..."
-        $pathToSearch = $pathToFunctions
-    }
 
-    [System.IO.FileInfo[]]$functionsPublicFiles = Get-ChildItem -Path $pathToSearch -File -ErrorAction Stop
-    $functionsPublicFiles = $functionsPublicFiles.Where({
+    [System.IO.FileInfo[]]$ps1ScriptFilesAll = $ModuleFiles.Where({
         $_.Extension -eq '.ps1'
     })
 
-    #[string[]]$functionsPublic = (Get-ChildItem -Path $pathToSearch -File -Filter '*.ps1').BaseName
-    [string[]]$functionsPublic = $functionsPublicFiles.BaseName
+    if (-not $ps1ScriptFilesAll) {
+        Write-Warning -Message "$theFName There are no .PS1 scripts found in $($ModuleFiles.Count) module files! Exiting."
+        return
+    }
 
-    if ($functionsPublic.Count -eq 0) {
-        Write-Error -Category ObjectNotFound -Message "$theFName There are no functions in path `"$pathToSearch`"!"
-        break
+    [string]$pathToFunctionsPublic  = [System.IO.Path]::Combine($Path, $Functions, $Public)
+    [string]$pathToFunctionsAll     = [System.IO.Path]::Combine($Path, $Functions)
+
+    if      (-not [System.IO.Directory]::Exists($pathToFunctionsPublic))
+    {
+        Write-Verbose -Message "$theFName Default directory for all function scripts `"$pathToFunctionsAll`" does not exists! Will search in module's root folder: $Path"
+        [string]$pathToSearch = $Path
     }
-    else {
-        Write-Verbose -Message "$theFName Found $($functionsPublic.Count) scripts in path `"$pathToSearch`"."
-        return $functionsPublic
+    elseif  (-not [System.IO.Directory]::Exists($pathToFunctionsPublic))
+    {
+        Write-Verbose -Message "$theFName Default directory for all function scripts `"$pathToFunctionsPublic`" does not exists! Will search in the folder for all functions: $pathToFunctionsAll"
+        [string]$pathToSearch = $pathToFunctionsAll
     }
+    else
+    {
+        Write-Verbose -Message "$theFName Search in the default directory for all function scripts: $pathToFunctionsPublic"
+        [string]$pathToSearch = $pathToFunctionsPublic
+    }
+
+    [System.IO.FileInfo[]]$functionScripts = $ps1ScriptFilesAll.Where({
+        $_.DirectoryName -eq $pathToSearch
+    })
+
+    if (-not $functionScripts) {
+        Write-Warning -Message "$theFName There are no function to export! Exiting."
+        return
+    }
+
+    [string[]]$functionsPublic = $functionScripts.BaseName
+
+    Write-Verbose -Message "$theFName Found $($functionsPublic.Count) scripts in path `"$pathToSearch`"."
+    return $functionsPublic
 }

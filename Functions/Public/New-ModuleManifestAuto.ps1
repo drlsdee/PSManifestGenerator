@@ -107,6 +107,8 @@ function New-ModuleManifestAuto {
     Write-Verbose -Message "$theFName PowerShell module manifest path: $Path"
     [string]$repositoryPath = Split-Path -Path $Path -Parent
 
+    [System.IO.FileInfo[]]$moduleFilesAll = Get-ModuleFiles -Path $repositoryPath
+
     [hashtable]$manifestData = [hashtable]::new()
 
     if (Test-Path -Path $Path -PathType Leaf) {
@@ -137,7 +139,7 @@ function New-ModuleManifestAuto {
     $manifestData.Path = $Path
 
     Write-Verbose -Message "$theFName List public functions..."
-    $manifestData.FunctionsToExport = Get-PublicFunctions -Path $repositoryPath
+    $manifestData.FunctionsToExport = Get-PublicFunctions -Path $repositoryPath -ModuleFiles $moduleFilesAll
     
     Write-Verbose -Message "$theFName List aliases for public functions..."
     $manifestData.AliasesToExport = Get-AliasesToExport -Path $repositoryPath -Functions $manifestData.FunctionsToExport
