@@ -25,17 +25,24 @@ function Get-AliasesToExport {
             Get-Command -Name $scriptBaseName -ErrorAction Stop
             Write-Verbose -Message "$theFName Function `"$scriptBaseName`" found in path `"$scriptFullName`". Try to get command..."
         }
-        catch {
+        catch [System.Management.Automation.CommandNotFoundException] {
             Write-Verbose -Message "$theFName Function `"$scriptBaseName`" is not imported. Dot sourcing it from path `"$scriptFullName`"..."
             . $scriptFullName
+        }
+        catch {
+            throw
         }
 
         try {
             [string]$aliasName = (Get-Alias -Definition $scriptBaseName -ErrorAction Stop).Name
             Write-Verbose -Message "$theFName Found alias `"$aliasName`" for function `"$scriptBaseName`"."
             $aliasesToExport += $aliasName
-        } catch {
+        }
+        catch [System.Management.Automation.ItemNotFoundException] {
             Write-Warning -Message "$theFName Function `"$scriptBaseName`" has no aliases!"
+        }
+        catch {
+            throw
         }
     })
 
