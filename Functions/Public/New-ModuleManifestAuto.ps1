@@ -147,11 +147,12 @@ function New-ModuleManifestAuto {
     $manifestData.AliasesToExport = Get-AliasesToExport -PublicFunctions $publicFunctions
 
     Write-Verbose -Message "$theFName Set RootModule..."
-    $manifestData.RootModule = Set-RootModule -Path $repositoryPath -ManifestPath $Path -RootModule $manifestData.RootModule
+    [System.IO.FileInfo]$rootModuleFileInfo = Set-RootModule -Path $repositoryPath -RootModule $manifestData.RootModule
+    $manifestData.RootModule = $rootModuleFileInfo.Name
     Write-Verbose -Message "$theFName Root module defined: $($manifestData.RootModule)"
 
     Write-Verbose -Message "$theFName List nested modules..."
-    $manifestNestedModules = Get-NestedModules -Path $repositoryPath -RootModule $manifestData.RootModule
+    $manifestNestedModules = Get-NestedModules -Path $repositoryPath #-RootModule $manifestData.RootModule
     if ($manifestNestedModules) {
         $manifestData.NestedModules = $manifestNestedModules
     }
