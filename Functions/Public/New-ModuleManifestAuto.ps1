@@ -147,12 +147,17 @@ function New-ModuleManifestAuto {
     $manifestData.AliasesToExport = Get-AliasesToExport -PublicFunctions $publicFunctions
 
     Write-Verbose -Message "$theFName Set RootModule..."
-    [System.IO.FileInfo]$rootModuleFileInfo = Set-RootModule -Path $repositoryPath -RootModule $manifestData.RootModule
-    $manifestData.RootModule = $rootModuleFileInfo.Name
-    Write-Verbose -Message "$theFName Root module defined: $($manifestData.RootModule)"
+    $rootModuleFileInfo = Set-RootModule -Path $repositoryPath -ModuleFiles $moduleFilesIncluded -RootModule $manifestData.RootModule
+    if ($rootModuleFileInfo.Extension -ne '.psd1') {
+        $manifestData.RootModule = $rootModuleFileInfo.Name
+        Write-Verbose -Message "$theFName Root module defined: $($manifestData.RootModule)"
+    }
+    else {
+        Write-Verbose -Message "$theFName Root module of type `"Manifest`" $($rootModuleFileInfo.Name) found in path `"$($rootModuleFileInfo.FullName)`" but will not be included in this manifest."
+    }
 
     Write-Verbose -Message "$theFName List nested modules..."
-    $manifestNestedModules = Get-NestedModules -Path $repositoryPath #-RootModule $manifestData.RootModule
+    $manifestNestedModules = Get-NestedModules -Path $repositoryPath -ModuleFiles $moduleFilesIncluded -RootModule $rootModuleFileInfo
     if ($manifestNestedModules) {
         $manifestData.NestedModules = $manifestNestedModules
     }
