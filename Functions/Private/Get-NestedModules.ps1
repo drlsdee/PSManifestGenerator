@@ -95,10 +95,3 @@ function Get-NestedModules {
     Write-Verbose -Message "$theFName End of function."
     return
 }
-
-[string[]]$modulesExtensionsValid = @(
-    '.psd1'
-    '.psm1'
-    '.dll'
-    '.cdxml'
-)
