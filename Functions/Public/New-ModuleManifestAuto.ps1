@@ -107,6 +107,9 @@ function New-ModuleManifestAuto {
     Write-Verbose -Message "$theFName PowerShell module manifest path: $Path"
     [string]$repositoryPath = Split-Path -Path $Path -Parent
 
+    [System.IO.FileInfo[]]$moduleFilesInventory = Get-ModuleFilesInventory  -Path $repositoryPath
+    [System.IO.FileInfo[]]$moduleFilesIncluded  = Get-ModuleFilesIncluded   -ModuleFiles $moduleFilesInventory
+
     [hashtable]$manifestData = [hashtable]::new()
 
     if (Test-Path -Path $Path -PathType Leaf) {
@@ -137,13 +140,24 @@ function New-ModuleManifestAuto {
     $manifestData.Path = $Path
 
     Write-Verbose -Message "$theFName List public functions..."
-    $manifestData.FunctionsToExport = Get-PublicFunctions -Path $repositoryPath
+    [System.IO.FileInfo[]]$publicFunctions  = Get-PublicFunctions -Path $repositoryPath -ModuleFiles $moduleFilesInventory
+    $manifestData.FunctionsToExport         = $publicFunctions.BaseName
     
     Write-Verbose -Message "$theFName List aliases for public functions..."
-    $manifestData.AliasesToExport = Get-AliasesToExport -Path $repositoryPath -Functions $manifestData.FunctionsToExport
+    $manifestData.AliasesToExport = Get-AliasesToExport -PublicFunctions $publicFunctions
+
+    Write-Verbose -Message "$theFName Set RootModule..."
+    $rootModuleFileInfo = Set-RootModule -Path $repositoryPath -ModuleFiles $moduleFilesIncluded -RootModule $manifestData.RootModule
+    if ($rootModuleFileInfo.Extension -ne '.psd1') {
+        $manifestData.RootModule = $rootModuleFileInfo.Name
+        Write-Verbose -Message "$theFName Root module defined: $($manifestData.RootModule)"
+    }
+    else {
+        Write-Verbose -Message "$theFName Root module of type `"Manifest`" $($rootModuleFileInfo.Name) found in path `"$($rootModuleFileInfo.FullName)`" but will not be included in this manifest."
+    }
 
     Write-Verbose -Message "$theFName List nested modules..."
-    $manifestNestedModules = Get-NestedModules -Path $repositoryPath
+    $manifestNestedModules = Get-NestedModules -Path $repositoryPath -ModuleFiles $moduleFilesIncluded -RootModule $rootModuleFileInfo
     if ($manifestNestedModules) {
         $manifestData.NestedModules = $manifestNestedModules
     }
@@ -161,10 +175,6 @@ function New-ModuleManifestAuto {
 
     Write-Verbose -Message "$theFName Set PowerShellVersion..."
     $manifestData.PowerShellVersion = Set-PowerShellVersion -PowerShellVersion $PowerShellVersion -PowerShellVersionOld $manifestData.PowerShellVersion
-
-    Write-Verbose -Message "$theFName Set RootModule..."
-    $manifestData.RootModule = Set-RootModule -Path $repositoryPath -ManifestPath $Path -RootModule $manifestData.RootModule
-    Write-Verbose -Message "$theFName Root module defined: $($manifestData.RootModule)"
 
     if ($CompanyName) {
         Write-Verbose -Message "$theFName Set Company name: $CompanyName"

@@ -7,40 +7,91 @@ function Get-NestedModules {
         [string]
         $Path,
 
-        [Parameter(DontShow)]
+        [Parameter()]
         # Nested modules root folder name
         [string]
-        $ModulesFolder = 'NestedModules'
+        $ModulesFolder,
+
+        # The list of all module files of types 'Manifest', 'Script', 'Binary' or 'Cim'.
+        [Parameter()]
+        [System.IO.FileInfo[]]
+        $ModuleFiles,
+
+        # Root module from bound parameters
+        [Parameter()]
+        [System.IO.FileInfo]
+        $RootModule
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
     Write-Verbose -Message "$theFName Starting function..."
-
-    [string[]]$nestedModules = @()
-
-    [string]$modulesFolderPath = "$Path\$ModulesFolder"
-
-    if (-not (Test-Path -Path $modulesFolderPath -PathType Container)) {
-        Write-Verbose -Message "$theFName Folder `"$ModulesFolder`" not found in path `"$Path`". The module probably has no nested modules. Exiting..."
-        return
-    } else {
-        Write-Verbose -Message "$theFName Folder `"$ModulesFolder`" found in path `"$Path`". Search for nested modules."
-        [System.IO.FileInfo[]]$subModuleFilesAll = Get-ChildItem -Path $modulesFolderPath -Recurse -File
-        [System.IO.FileInfo[]]$subModulesAll = $subModuleFilesAll.Where({
-            $_.Extension -in @('.psm1', '.psd1', '.dll')
+    [string]$includeFolder = "$($PSScriptRoot)\$($MyInvocation.MyCommand.Name)"
+    [string[]]$toolsScripts = [System.IO.Directory]::GetFiles($includeFolder, '*.ps1')
+    if ($toolsScripts) {
+        $toolsScripts.ForEach({
+            Write-Verbose -Message "$theFName Loading script from path: $_"
+            . $_
         })
-        if (!$subModulesAll) {
-            Write-Verbose -Message "$theFName No nested modules found in folder `"$modulesFolderPath`"! Exiting..."
-            return
-        }
-        [System.IO.FileInfo[]]$subModulesManifests = $subModulesAll.Where({$_.Extension -eq '.psd1'})
-        Write-Verbose -Message "$theFName Found $($subModulesManifests.Count) submodules of type `"Manifest`"."
-        
-        [System.IO.FileInfo[]]$subModulesScripts = $subModulesAll.Where({($_.Extension -eq '.psm1') -and ($_.BaseName -notin $subModulesManifests.BaseName)})
-        Write-Verbose -Message "$theFName Found $($subModulesScripts.Count) submodules of type `"Script`"."
-        
-        $nestedModules += $subModulesManifests.FullName.TrimStart($Path)
-        $nestedModules += $subModulesScripts.FullName.TrimStart($Path)
     }
+
+    if (-not $ModuleFiles) {
+        Write-Verbose -Message "$theFName List of module files is empty! Exiting."
+        return
+    }
+
+    [string]$subModulesFolderPath = [System.IO.Path]::Combine($Path, $ModulesFolder)
+    if (-not $ModulesFolder) {
+        Write-Verbose -Message "$theFName Folder for nested modules is not defined. Search in whole module folder `"$subModulesFolderPath`"..."
+        [System.IO.FileInfo[]]$subModuleFilesAll = $ModuleFiles
+    } else {
+        Write-Verbose -Message "$theFName Search for nested modules in folder `"$subModulesFolderPath`"..."
+        [System.IO.FileInfo[]]$subModuleFilesAll = $ModuleFiles.Where({
+            $_.DirectoryName -eq $subModulesFolderPath
+        })
+    }
+
+    if (-not $subModuleFilesAll) {
+        Write-Verbose -Message "$theFName Modules are not found! Exiting."
+        return
+    }
+
+    Write-Verbose -Message "$theFName Found $($subModuleFilesAll.Count) module files total."
+
+    if ($RootModule) {
+        Write-Verbose -Message "$theFName Root module is defined: $($RootModule.Name). Excluding it from module list..."
+        $subModuleFilesAll = $subModuleFilesAll.Where({
+            $_.FullName -ne $RootModule.FullName
+        })
+    }
+    else {
+        Write-Verbose -Message "$theFName Root module is NOT defined! Processing whole module list..."
+    }
+
+    if (-not $subModuleFilesAll) {
+        Write-Verbose -Message "$theFName There are no modules excepting the root module! Exiting."
+        return
+    }
+
+    [psmoduleinfo[]]$subModulesInfoAll = $subModuleFilesAll.ForEach({
+        try {
+            Get-Module -Name $_.FullName -ListAvailable
+        }
+        catch {
+            throw
+        }
+    })
+
+    [psmoduleinfo[]]$subModulesToProcess = Get-ChildModules -ModuleList $subModulesInfoAll
+
+    if ($subModulesToProcess) {
+        Write-Verbose -Message "$theFName Processing $($subModulesToProcess.Count) submodules..."
+        [System.Object[]]$nestedModulesTable = @()
+        $subModulesToProcess.ForEach({
+            $nestedModulesTable += (Convert-PSModuleInfoToHashTable -Path $Path -ModuleInfo $_)
+        })
+        Write-Verbose -Message "$theFName Found $($nestedModulesTable.Count) nested modules. Returning result."
+        return $nestedModulesTable
+    }
+
     Write-Verbose -Message "$theFName End of function."
-    return $nestedModules
+    return
 }

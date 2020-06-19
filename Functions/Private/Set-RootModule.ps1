@@ -6,12 +6,12 @@ function Set-RootModule {
         [string]
         $Path,
 
-        # Path to manifest file (existing or not)
+        # The list of all module files of types 'Manifest', 'Script', 'Binary' or 'Cim'.
         [Parameter()]
-        [string]
-        $ManifestPath,
+        [System.IO.FileInfo[]]
+        $ModuleFiles,
         
-        # RootModule
+        # RootModule from bound parameters or old manifest data
         [Parameter()]
         [string]
         $RootModule
@@ -19,76 +19,63 @@ function Set-RootModule {
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
     Write-Verbose -Message "$theFName Starting function..."
 
-    if ($ManifestPath) {
-        [string]$moduleManifestBaseName = (Split-Path -Path $ManifestPath -Leaf) -replace '\.\w+$'
-    } else {
-        [string]$moduleManifestBaseName = Split-Path -Path $Path -Leaf
+    if  (-not $ModuleFiles)
+    {
+        Write-Verbose -Message "$theFName No module files were found. Returning null."
+        return
     }
-    
-    Write-Verbose -Message "$theFName Manifest basename is: $moduleManifestBaseName"
-
-    [System.IO.FileInfo[]]$allFiles = Get-ChildItem -Path $Path -File
-    [System.IO.FileInfo[]]$allModuleFiles = $allFiles.Where({
-        $_.Extension -in @(
-            '.psm1'
-            '.dll'
-        )
-    })
-
-    <# if ($allModuleFiles.Count -eq 0) {
-        Write-Warning -Message "$theFName No module files found in path: $Path. Go deeper..."
-        [System.IO.FileInfo[]]$allFiles = Get-ChildItem -Path $Path -File -Recurse
-        [System.IO.FileInfo[]]$allModuleFiles = $allFiles.Where({
-            $_.Extension -in @(
-                '.psm1'
-                '.dll'
-            )
-        })
-    } #>
-
-    if ($allModuleFiles.Count -eq 0) {
-        Write-Error -Category ObjectNotFound -Message "$theFName Module files not found! Something wrong..."
-        break
-    } elseif ($allModuleFiles.Count -eq 1) {
-        [string]$rootModuleBaseName = $allModuleFiles[0].Name
-        [string]$rootModuleFullName = $allModuleFiles[0].FullName
-        #$rootModuleFullName = [regex]::Replace($rootModuleFullName, $Path, '')
-        Write-Verbose -Message "$theFName Only one module file `"$rootModuleBaseName`" found in path: $rootModuleFullName"
-        return $rootModuleBaseName
+    elseif ($ModuleFiles.Count -eq 1) {
+        [System.IO.FileInfo]$rootModuleFile = $ModuleFiles[0]
+        Write-Verbose -Message "$theFName Found only one module file `"$($rootModuleFile.Name)`" in path `"$($rootModuleFile.FullName)`". Returning this."
+        return $rootModuleFile
     }
 
-    if ($RootModule.Length -gt 0) {
-        Write-Verbose -Message "$theFName RootModule name defined: $RootModule"
-        [System.IO.FileInfo[]]$modulesMatchedToRoot = $allModuleFiles.Where({
-            $_.Name -match $RootModule
-        })
-        if ($modulesMatchedToRoot.Count -eq 1) {
-            [string]$rootModuleBaseName = $modulesMatchedToRoot[0].Name
-            [string]$rootModuleFullName = $modulesMatchedToRoot[0].FullName
-            #$rootModuleFullName = [regex]::Replace($rootModuleFullName, $Path, '')
-            Write-Verbose -Message "$theFName Only one module file `"$rootModuleBaseName`" found in path: $rootModuleFullName"
-            return $rootModuleBaseName
-        } else {
-            Write-Verbose -Message "$theFName Found $($modulesMatchedToManifest.Count) module files matching to given RootModule name `"$RootModule`"."
+    Write-Verbose -Message "$theFName Found $($ModuleFiles.Count) module files of type other than `'Manifest`'."
+
+    if  ($RootModule)
+    {
+        Write-Verbose -Message "$theFName Root module name is defined in bound parameters: $RootModule"
+        if ([System.IO.Path]::GetExtension($RootModule) -eq '.psd1') {
+            Write-Warning -Message "$theFName Predefined root module name is the name of module manifest! Anyway we'll ignore this and will search for matches with BaseName."
         }
-    } else {
-        Write-Verbose -Message "$theFName RootModule is not set."
+        [string]$rootModuleBaseName = [System.IO.Path]::GetFileNameWithoutExtension($RootModule)
+    }
+    else {
+        Write-Verbose -Message "$theFName Root module name is not set. Assume that root module name is equal to module's folder name."
+        [string]$rootModuleBaseName = Split-Path -Path $Path -Leaf
     }
 
-    [System.IO.FileInfo[]]$modulesMatchedToManifest = $allModuleFiles.Where({
-        $_.BaseName -match $moduleManifestBaseName
+    Write-Verbose -Message "$theFName The BaseName for the root module should be `"$rootModuleBaseName`"."
+
+    $ModuleFiles = $ModuleFiles.Where({
+        $_.BaseName -eq $rootModuleBaseName
     })
 
-    if ($modulesMatchedToManifest.Count -eq 1) {
-        [string]$rootModuleBaseName = $modulesMatchedToManifest[0].Name
-        [string]$rootModuleFullName = $modulesMatchedToManifest[0].FullName
-        #$rootModuleFullName = [regex]::Replace($rootModuleFullName, $Path, '')
-        Write-Verbose -Message "$theFName Only one module file `"$rootModuleBaseName`" found in path: $rootModuleFullName"
-        return $rootModuleBaseName
-    } else {
-        Write-Verbose -Message "$theFName Found $($modulesMatchedToManifest.Count) module files matching to manifest name `"$moduleManifestBaseName`"."
+    if  (-not $ModuleFiles) {
+        Write-Verbose -Message "$theFName No module files with BaseName matching to `"$rootModuleBaseName`" were found. Returning null."
+        return
     }
 
-    Write-Verbose -Message "$theFName End of function."
-    return
+    if ($ModuleFiles.Count -eq 1) {
+        Write-Verbose -Message "$theFName Found only one module file `"$($rootModuleFile.Name)`" in path `"$($rootModuleFile.FullName)`". Returning this."
+        [System.IO.FileInfo]$rootModuleFile = $ModuleFiles[0]
+        return $rootModuleFile
+    }
+
+    Write-Verbose -Message "$theFName Found $($ModuleFiles.Count) modules matching to BaseName `"$rootModuleBaseName`". Try to search exact match with root module name from bound parameters..."
+    $ModuleFiles = $ModuleFiles.Where({
+        ($_.Name -eq $RootModule) -and `
+        ($_.DirectoryName -eq $Path)
+    })
+
+    if  (-not $ModuleFiles)
+    {
+        Write-Verbose -Message "$theFName Root module not found. End of function."
+        return
+    }
+
+    [System.IO.FileInfo]$moduleToReturn = $ModuleFiles[0]
+
+    Write-Verbose -Message "$theFName Root module `"$($moduleToReturn.BaseName)`" found in path `"$($moduleToReturn.FullName)`".End of function."
+    return $moduleToReturn
 }
