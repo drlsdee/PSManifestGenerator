@@ -45,5 +45,3 @@ function Set-PreReleaseNotes {
 
     Write-Verbose -Message "$theFName End of function."
 }
-
-Set-PreReleaseNotes -Verbose
