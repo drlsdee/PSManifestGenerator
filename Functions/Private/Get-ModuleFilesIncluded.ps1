@@ -18,7 +18,9 @@ function Get-ModuleFilesIncluded {
         '.psd1'
         '.psm1'
         '.dll'
+        '.exe'
         '.cdxml'
+        '.xaml'
     )
 
     [System.IO.FileInfo[]]$moduleFilesIncluded = $ModuleFiles.Where({
@@ -26,7 +28,7 @@ function Get-ModuleFilesIncluded {
     })
 
     if (-not $moduleFilesIncluded) {
-        Write-Warning -Message "$theFName No module files of type `'Manifest`', `'Script`', `'Binary`' or `'Cim`' were found! Exiting."
+        Write-Warning -Message "$theFName No module files of type `'Manifest`', `'Script`', `'Binary`', `'WorkFlow`' or `'Cim`' were found! Exiting."
         return
     }
     

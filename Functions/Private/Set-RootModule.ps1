@@ -6,7 +6,7 @@ function Set-RootModule {
         [string]
         $Path,
 
-        # The list of all module files of types 'Manifest', 'Script', 'Binary' or 'Cim'.
+        # The list of all module files of types 'Manifest', 'Script', 'Binary', 'WorkFlow' or 'Cim'.
         [Parameter()]
         [System.IO.FileInfo[]]
         $ModuleFiles,

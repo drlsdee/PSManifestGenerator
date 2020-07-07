@@ -30,6 +30,7 @@ function Get-ModuleFilesInventory {
         '.PSM1',
         '.SO',
         '.TXT',
+        '.XAML',
         '.XML',
         '.XSD',
         '.YML'
