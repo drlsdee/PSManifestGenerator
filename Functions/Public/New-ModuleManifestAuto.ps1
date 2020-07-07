@@ -205,15 +205,15 @@ function New-ModuleManifestAuto {
     Write-Verbose -Message "$theFName Set module tags..."
     $manifestData.Tags = Set-ModuleTags -Tags $Tags -TagsOld $manifestData.Tags
 
-    Write-Verbose -Message "$theFName Set module version..."
-    $manifestData.ModuleVersion = Set-NewVersion -ModuleVersion $ModuleVersion -VersionOld $manifestData.ModuleVersion
-    Write-Verbose -Message "$theFName Module version is set to: `"$($manifestData.ModuleVersion)`"."
-
     Write-Verbose -Message "$theFName Set project URI..."
     $manifestData.ProjectUri = New-ProjectUri -Path $Path -ProjectUri $ProjectUri -OriginURI $commitMessage.URI -SCMUri $SCMUri -Owner $Owner
 
     Write-Verbose -Message "$theFName Set pre-release notes..."
     $manifestData.PreRelease = Set-PreReleaseNotes -PreRelease:$PreRelease -PreReleaseNotes $commitMessage.Message
+
+    Write-Verbose -Message "$theFName Set module version..."
+    $manifestData.ModuleVersion = Set-NewVersion -ModuleVersion $ModuleVersion -VersionOld $manifestData.ModuleVersion
+    Write-Verbose -Message "$theFName Module version is set to: `"$($manifestData.ModuleVersion)`"."
 
     Write-Verbose -Message "$theFName Passing common parameters to `"New-ModuleManifest`"..."
     [string[]]$parameterNamesCommon = @(
