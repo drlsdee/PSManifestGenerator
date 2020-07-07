@@ -96,7 +96,7 @@ function New-ModuleManifestAuto {
 
     if (-not $Path) {
         Write-Verbose -Message "$theFName Path is not specified! Will work on manifest of this module..."
-        $Path = $PSScriptRoot
+        $Path = [System.IO.Path]::GetFullPath("$PSScriptRoot\..\..")
     }
     Write-Verbose -Message "$theFName RESOLVING REPOSITORY PATH FROM `"$Path`"..."
     $repositoryPath = Convert-ModuleManifestPath -Path $Path -ReturnType Folder

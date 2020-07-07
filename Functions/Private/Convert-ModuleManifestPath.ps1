@@ -14,7 +14,7 @@ function Convert-ModuleManifestPath {
         $ReturnType
     )
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
-    Write-Verbose -Message "$theFName Starting function... Current location is $((Get-Location).Path)"
+    Write-Verbose -Message "$theFName Starting function... Current location is $((Get-Location).Path), given path is `"$Path`""
 
     if      ([System.IO.Path]::GetExtension($Path))
     {
@@ -45,7 +45,7 @@ function Convert-ModuleManifestPath {
     }
     else
     {
-        Write-Verbose -Message "$theFName Given path is a path to directory! The function returns a path to a new manifest with basename the same as the folder's basename."
+        Write-Verbose -Message "$theFName Given path `"$Path`" is a path to directory! The function returns a path to a new manifest with basename the same as the folder's basename."
         [string]$manifestFolderPath = [System.IO.Path]::GetFullPath($Path).TrimEnd('\')
         Write-Verbose -Message "$theFName Manifest folder path: $manifestFolderPath"
         $fileNameClean = [System.IO.Path]::GetFileName($manifestFolderPath)
