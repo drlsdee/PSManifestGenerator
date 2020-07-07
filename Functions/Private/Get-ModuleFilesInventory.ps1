@@ -36,7 +36,7 @@ function Get-ModuleFilesInventory {
         '.YML'
     )
 
-    [System.IO.FileInfo[]]$filesAll = Get-ChildItem -Path $Path -File -Recurse
+    [System.IO.FileInfo[]]$filesAll = [System.IO.Directory]::EnumerateFiles($Path, '*', 'AllDirectories')
 
     if (-not $filesAll) {
         Write-Warning -Message "$theFName The folder `"$Path`" and its subfolders are empty! Exiting."

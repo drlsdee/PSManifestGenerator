@@ -25,7 +25,7 @@ function Get-NestedModules {
     [string]$theFName = "[$($MyInvocation.MyCommand.Name)]:"
     Write-Verbose -Message "$theFName Starting function..."
     [string]$includeFolder = "$($PSScriptRoot)\$($MyInvocation.MyCommand.Name)"
-    [string[]]$toolsScripts = [System.IO.Directory]::GetFiles($includeFolder, '*.ps1')
+    [string[]]$toolsScripts = [System.IO.Directory]::EnumerateFiles($includeFolder, '*.ps1')
     if ($toolsScripts) {
         $toolsScripts.ForEach({
             Write-Verbose -Message "$theFName Loading script from path: $_"

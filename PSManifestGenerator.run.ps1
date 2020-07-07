@@ -63,7 +63,8 @@ if (($Tags.Count -eq 1) -and ($Tags -match ',')) {
 }
 
 [string]$toolFunctionsFolder = "$PSScriptRoot\dontPackMe\tools"
-[string[]]$toolFunctionScripts = (Get-ChildItem -Path $toolFunctionsFolder -File -Recurse -Include '*.ps1').FullName
+
+[string[]]$toolFunctionScripts = [System.IO.Directory]::EnumerateFiles($toolFunctionsFolder, '*.ps1', 'AllDirectories')
 $toolFunctionScripts.ForEach({
     . $_
 })

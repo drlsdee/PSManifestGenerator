@@ -33,13 +33,7 @@ function Get-ChildModules {
     if ($filesToExclude) {
         $pathsToExclude += $filesToExclude
     }
-<# 
-    if ($pathsToExclude) {
-        $pathsToExclude.ForEach({
-            Write-Verbose -Message "$theFName Excluding file: $_"
-        })
-    }
- #>
+
     [psmoduleinfo[]]$ModuleList = $ModuleList.Where({$_.Path -notin $pathsToExclude})
 
     [psmoduleinfo[]]$modulesFlat = $ModuleList.Where({
