@@ -57,9 +57,14 @@ function Get-NestedModules {
     Write-Verbose -Message "$theFName Found $($subModuleFilesAll.Count) module files total."
 
     if ($RootModule) {
-        Write-Verbose -Message "$theFName Root module is defined: $($RootModule.Name). Excluding it from module list..."
+        [string]$rootModuleScript   = $RootModule.FullName
+        [string]$rootModuleManifest = [System.IO.Path]::ChangeExtension($rootModuleScript, 'psd1')
+        Write-Verbose -Message "$theFName Root module is defined: `"$rootModuleScript`". Excluding it from module list as well as the module manifest `"$rootModuleManifest`"..."
         $subModuleFilesAll = $subModuleFilesAll.Where({
-            $_.FullName -ne $RootModule.FullName
+            $_.FullName -notin @(
+                $rootModuleScript
+                $rootModuleManifest
+            )
         })
     }
     else {

@@ -96,7 +96,7 @@ function Get-CommitMessage {
         }
         {$null -ne $originURI}      {
             Write-Verbose -Message "$theFName Origin URI found: $originURI"
-            $tmpCommitHashTable.URI = $originURI.TrimEnd('.git')
+            $tmpCommitHashTable.URI = [regex]::Replace($originURI,'\.git$','')
         }
     }
 
