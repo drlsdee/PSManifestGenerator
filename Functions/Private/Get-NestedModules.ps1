@@ -41,7 +41,9 @@ function Get-NestedModules {
     [string]$subModulesFolderPath = [System.IO.Path]::Combine($Path, $ModulesFolder)
     if (-not $ModulesFolder) {
         Write-Verbose -Message "$theFName Folder for nested modules is not defined. Search in whole module folder `"$subModulesFolderPath`"..."
-        [System.IO.FileInfo[]]$subModuleFilesAll = $ModuleFiles
+        [System.IO.FileInfo[]]$subModuleFilesAll = $ModuleFiles.Where({
+            $_.BaseName -notmatch '\.'
+        })
     } else {
         Write-Verbose -Message "$theFName Search for nested modules in folder `"$subModulesFolderPath`"..."
         [System.IO.FileInfo[]]$subModuleFilesAll = $ModuleFiles.Where({

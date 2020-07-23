@@ -1,99 +1,134 @@
-#Import-Module -Name PSScriptAnalyzer -Force
+#Requires   -Module @{  ModuleName  =   'Pester';           ModuleVersion   =   '5.0.2'     }
+#Requires   -Module @{  ModuleName  =   'PSScriptAnalyzer'; ModuleVersion   =   '1.19.0'    }
 
-[string[]]$dirsAll = [System.IO.Directory]::EnumerateDirectories($PSScriptRoot)
-[string]$classesDir = "$PSScriptRoot\Classes"
-[string]$functionsDir = "$PSScriptRoot\Functions"
-[string[]]$classessAll = @()
-[string[]]$functionsAll = @()
-if ($dirsAll.Contains($classesDir)) {
-    [string[]]$classessAll = @(
-        [System.IO.Directory]::EnumerateFiles($classesDir, '*.ps1', 'AllDirectories')
-    )
+[string]$psTestDataPath         =   [System.IO.Path]::ChangeExtension($PSCommandPath, 'psd1')
+if (-not [System.IO.File]::Exists($psTestDataPath)) {
+    Write-Warning -Message "PowerShell data file not found: $psTestDataPath"
+    return
 }
 
-if ($dirsAll.Contains($functionsDir)) {
-    [string[]]$functionsAll = @(
-        [System.IO.Directory]::EnumerateFiles($functionsDir, '*.ps1', 'AllDirectories')
-    )
-}
+$psTestData                     =   Import-PowerShellDataFile -Path $psTestDataPath
+#   Constants
+##  The module root folder:
+$psTestData.psModuleRoot        =   $PSScriptRoot
+##  The module name:
+#[string]$psModuleName           =   [System.IO.Path]::GetFileNameWithoutExtension($PSScriptRoot)
+$psTestData.psModuleName        =   [System.IO.Path]::GetFileNameWithoutExtension($PSScriptRoot)
+##  The expected manifest name:
+#[string]$psManifestName         =   "$($psModuleName).psd1"
+$psTestData.psManifestName      =   "$($psModuleName).psd1"
+##  The expected module manifest path:
+#[string]$psManifestPath         =   [System.IO.Path]::Combine($PSScriptRoot, $psManifestName)
+$psTestData.psManifestPath      =   [System.IO.Path]::Combine($PSScriptRoot, $psManifestName)
 
-[string]$theModuleName = [System.IO.Path]::GetFileName($PSScriptRoot)
-
-[string]$manifestPath = [System.IO.Path]::Combine($PSScriptRoot, "$($theModuleName).psd1")
-
-[string[]]$moduleExtensions = @(
-    '.psm1'
-    '.psd1'
-    '.xaml'
-    '.cdxml'
-    '.dll'
-    '.exe'
-)
-[string[]]$moduleFiles = $moduleExtensions.ForEach({
-    [System.IO.Directory]::EnumerateFiles($PSScriptRoot, "*$($_)")
+##  The expected root module names:
+$psTestData.psRootNames         =   $psTestData.psModuleExtensions.ForEach({
+    "$($psTestData.psModuleName)$($_)"
 })
-[string[]]$moduleBaseNames = $moduleFiles.ForEach({
-    [System.IO.Path]::GetFileNameWithoutExtension($_)
-}) | Select-Object -Unique
 
-Describe "General tests for the module $theModuleName" {
-    Context "Module $theModuleName Inventory" {
-        It "At least one module file should exist" {
-            $moduleFiles.Count -gt 0 | Should Be $true
+##  The expected directory structure:
+$psTestData.psDirsShouldPresent =   $psTestData.psDirsShouldPresent.ForEach({
+    [System.IO.Path]::Combine($PSScriptRoot, $_)
+})
+
+Describe "General tests for the module: $($psTestData.psModuleName)" {
+    Context "Inventory: $($psTestData.psModuleName)" {
+
+        It "Subfolders should be present" -TestCases $psTestData {
+            param(
+                $psDirsShouldPresent
+            )
+            [bool]$folderExists =   [System.IO.Directory]::Exists($psDirsShouldPresent)
+            $folderExists       |   Should -BeTrue
         }
-        
-        It "At least one of module files should have the basename equal to the $theModuleName" {
-            $moduleBaseNames.Count -gt 0 | Should Be $true
+
+        It "Subfolders should contain scripts" -TestCases $psTestData {
+            param(
+                $psDirsShouldPresent
+            )
+            [System.IO.Directory]::EnumerateFiles($psDirsShouldPresent, '*.ps1') |   Should -BeGreaterThan 0
+        }
+
+        It "The module file should be present" -TestCases $psTestData {
+            param(
+                $psRootNames
+            )
+            [string[]]$rootFilesPresent = $psRootNames.ForEach({
+                [System.IO.Directory]::EnumerateFiles($PSScriptRoot, $_)
+            })
+            $rootFilesPresent.Count |   Should -BeGreaterThan 0
         }
     }
 
-    Context "Check every script of the module $theModuleName" {
-        $classessAll.ForEach({
-            It "Importing the class $([System.IO.Path]::GetFileNameWithoutExtension($_))" {
-                . $_ | Should Be $null
-            }
-        })
+    Context "General tests of the scripts" {
 
-        $functionsAll.ForEach({
-            It "Running the function $([System.IO.Path]::GetFileNameWithoutExtension($_))" {
-                & $_ | Should Be $null
-            }
-        })
+        It "Invoke PSScriptAnalyzer for scripts" -TestCases $psTestData {
+            param (
+                $psDirsShouldPresent,
+                $psScriptAnalyzerRules
+            )
+            [string[]]$scriptsAll   =   $psDirsShouldPresent.ForEach({
+                [System.IO.Directory]::EnumerateFiles($_, '*.ps1')
+            }) -notmatch '\.tests\.ps1$'
+
+            $scriptsAll.ForEach({
+                Invoke-ScriptAnalyzer   -Path $_ `
+                                    -ExcludeRule $psScriptAnalyzerRules.ExcludeRule `
+                                    -Severity $psScriptAnalyzerRules.Severity `
+                                    | Should -BeNullOrEmpty
+            })
+        }
     }
 
-    if ([System.IO.File]::Exists($manifestPath)) {
-        Context "Checking the manifest of the module $theModuleName" {
-            It "Importing the manifest $theModuleName" {
-            Import-PowerShellDataFile -Path $manifestPath | Should Be System.Collections.Hashtable
+    if ([System.IO.File]::Exists($psTestData.psManifestPath)) {
+        Context "Testing the manifest $($psTestData.psManifestName)" {
+            
+            It "Invoke PSScriptAnalyzer for the module manifest: $($psTestData.psManifestName)" -TestCases $psTestData {
+                param(
+                    $psManifestPath,
+                    $psScriptAnalyzerRules
+                )
+                Invoke-ScriptAnalyzer   -Path $psManifestPath `
+                                        -ExcludeRule $psScriptAnalyzerRules.Manifest.ExcludeRule `
+                                        -Severity $psScriptAnalyzerRules.Manifest.Severity `
+                                        | Should -BeNullOrEmpty
             }
 
-            [hashtable]$psData = Import-PowerShellDataFile -Path $manifestPath
-
-            It "The Manifest contains keys" {
-                $psData.Keys.Count -gt 0 | Should Be $true
-            }
-
-            It "The Manifest's root module is not the manifest or .ps1 script" {
-                if ($psData.ContainsKey('RootModule')) {
-                    [string]$rootModuleExt = [System.IO.Path]::GetExtension($psData.RootModule)
-                    ($rootModuleExt -in $moduleExtensions) -and `
-                    ($rootModuleExt -ne '.psd1') | Should Be $true
+            It "Read the manifest: $($psTestData.psManifestPath)" -TestCases $psTestData {
+                param(
+                    $psManifestPath
+                )
+                $psManifestData                 =   Import-PowerShellDataFile -Path $psManifestPath
+                $psManifestData                 |   Should -BeOfType 'System.Collections.Hashtable'
+                [string]$psManifestRootModule   =   $psManifestData.RootModule
+                if ($psManifestRootModule)
+                {
+                    [System.IO.Path]::GetExtension($psManifestRootModule)   | Should -Not -BeIn @('.ps1', '.psd1')
                 }
             }
         }
     }
 
-    Context "Trying to import the module $theModuleName" {
-        It "Get information about the module $theModuleName" {
-            Get-Module -Name $PSScriptRoot -ListAvailable | Should Be $true
+    Context "Test load: $($psTestData.psModuleName)" {
+        It "Get-Module $($psTestData.psModuleName)" -TestCases $psTestData {
+            param(
+                $psModuleRoot
+            )
+            $psModuleInfo       =   Get-Module -Name $psModuleRoot -ListAvailable
+            $psModuleInfo       |   Should -BeOfType 'System.Management.Automation.PSModuleInfo'
         }
 
-        It "Check if the module $theModuleName can be loaded" {
-            Import-Module -Name $PSScriptRoot -Force | Should Be $null
-        }
-
-        It "Check if the module $theModuleName can be UNloaded" {
-            Remove-Module -Name $theModuleName -Force | Should Be $null
+        It "Import and remove module $($psTestData.psModuleName)" -TestCases $psTestData {
+            param(
+                $psModuleRoot,
+                $psModuleName
+            )
+            $psImportResult             =   Import-Module -Name $psModuleRoot
+            $psImportResult             |   Should -BeNullOrEmpty
+            $psModuleInfo               =   Get-Module -Name $psModuleName
+            $psModuleInfo               |   Should -BeOfType 'System.Management.Automation.PSModuleInfo'
+            $psModuleInfo.Name          |   Should -BeExactly $psModuleName
+            $psModuleInfo.ModuleBase    |   Should -BeExactly $PSScriptRoot
         }
     }
 }
