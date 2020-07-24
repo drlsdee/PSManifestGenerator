@@ -17,16 +17,18 @@ function Import-AllModules {
 
     [System.IO.FileInfo[]]$moduleFilesAll = Get-ChildItem -Path $Path -File
     [System.IO.FileInfo[]]$moduleScriptsAll = $moduleFilesAll.Where({
-        $_.Extension -eq '.psm1'
+        ($_.Extension -eq '.psm1')          -and `
+        ($_.BaseName -notmatch '\.test')    -and `
+        ($_.BaseName -notmatch '\.build')
     })
     [System.IO.FileInfo[]]$moduleManifestsAll = $moduleFilesAll.Where({
-        $_.Extension -eq '.psd1'
+        ($_.Extension -eq '.psd1')          -and `
+        ($_.BaseName -notmatch '\.test')    -and `
+        ($_.BaseName -notmatch '\.build')
     })
-    [string[]]$moduleScriptNames = $moduleScriptsAll.BaseName
+    
     [string[]]$moduleManifestNames = $moduleManifestsAll.BaseName
-    [string[]]$moduleScriptNamesWOManifest = $moduleScriptNames.Where({
-        $_ -notin $moduleManifestNames
-    })
+    
     [System.IO.FileInfo[]]$moduleScriptsWOManifest = $moduleScriptsAll.Where({
         $_.BaseName -notin $moduleManifestNames
     })
@@ -35,8 +37,6 @@ function Import-AllModules {
         $moduleManifestsAll
         $moduleScriptsWOManifest
     )
-
-    #[System.Management.Automation.PSModuleInfo[]]$modulesAll = Get-Module -Name $Path -ListAvailable -Verbose -Refresh
     
     Write-Verbose "Found $($modulesAll.Count) modules:"
     $modulesAll.ForEach({

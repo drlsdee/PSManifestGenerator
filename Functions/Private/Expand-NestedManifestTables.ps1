@@ -24,22 +24,37 @@ function Expand-NestedManifestTables {
         switch ($keyTypeName) {
             'System.Collections.Hashtable'  {
                 Write-Verbose -Message "$theFName Processing the key `"$keyName`" of type `"$keyTypeName`"..."
-                [hashtable]$keyValue = $InputObject.$keyName
-                [hashtable]$tableFlatten = Expand-NestedManifestTables -InputObject $keyValue
+                [hashtable]$keyValueHT      = $InputObject.$keyName
+                [hashtable]$tableFlatten    = Expand-NestedManifestTables -InputObject $keyValueHT
                 $tableFlatten.Keys.ForEach({
                     $outputObject.$_ = $tableFlatten.$_
                 })
             }
             'System.String'                 {
                 Write-Verbose -Message "$theFName Processing the key `"$keyName`" of type `"$keyTypeName`"..."
-                [string]$keyValue = $InputObject.$keyName
-                $keyValue = $keyValue.TrimStart(' ').TrimEnd(' ')
+                [string]$keyValueStr     = $InputObject.$keyName
+                $keyValueStr = $keyValueStr.TrimStart(' ').TrimEnd(' ')
                 if  (
-                    ($keyValue.Length -gt 0) -and `
-                    ($keyValue -notmatch '^[*]$' )
+                    ($keyValueStr.Length -gt 0) -and `
+                    ($keyValueStr -notmatch '^[*]$' )
                 )
                 {
-                    Write-Verbose -Message "$theFName Adding key `"$keyName`" with value `"$keyValue`" to output object."
+                    Write-Verbose -Message "$theFName Adding key `"$keyName`" with value `"$keyValueStr`" to output object."
+                    $outputObject.$keyName = $InputObject.$keyName
+                }
+            }
+            'System.Object[]'               {
+                Write-Verbose -Message "$theFName Processing the key `"$keyName`" of type `"$keyTypeName`"..."
+                [System.Object[]]$keyValueObj = $InputObject.$keyName
+                if (-not $keyValueObj.Count) {
+                    Write-Warning -Message "$theFName The key `"$keyName`" of type `"$keyTypeName`" contains an empty array! Ignoring..."
+                }
+                else {
+                    [string[]]$memberTypes  = $keyValueObj.ForEach({
+                        $_.GetType().FullName
+                    })
+                    [string[]]$memberTypes  = [System.Linq.Enumerable]::Distinct($memberTypes)
+                    Write-Verbose -Message "$theFName The key `"$keyName`" of type `"$keyTypeName`" contains $($keyValueObj.Count) objects of types: $($memberTypes -join ', ')."
                     $outputObject.$keyName = $InputObject.$keyName
                 }
             }
